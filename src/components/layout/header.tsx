@@ -3,6 +3,7 @@ import { BookOpenText, FlaskConical, Atom, Sigma } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu } from 'lucide-react';
+import { ThemeToggleButton } from '@/components/theme-toggle-button'; // Import the toggle button
 
 export function Header() {
   const navItems = [
@@ -30,10 +31,12 @@ export function Header() {
               {item.label}
             </Link>
           ))}
+           <ThemeToggleButton /> {/* Add theme toggle button */}
         </nav>
 
         {/* Mobile Navigation */}
-        <div className="md:hidden">
+        <div className="md:hidden flex items-center gap-2">
+           <ThemeToggleButton /> {/* Add theme toggle button */}
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon">

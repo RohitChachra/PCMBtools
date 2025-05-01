@@ -5,12 +5,14 @@ import './globals.css';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { cn } from '@/lib/utils';
-import { Toaster } from "@/components/ui/toaster"
+import { Toaster } from "@/components/ui/toaster";
+import { ThemeProvider } from "@/components/theme-provider"; // Import ThemeProvider
 
 
-// Correctly assign the font objects
-const geistSans = GeistSans;
-const geistMono = GeistMono;
+// Correctly assign the font variables
+const geistSansVariable = GeistSans.variable;
+const geistMonoVariable = GeistMono.variable;
+
 
 export const metadata: Metadata = {
   title: 'SciVerse - Explore Math, Chemistry & Physics',
@@ -23,18 +25,25 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" className="h-full" suppressHydrationWarning> {/* Add suppressHydrationWarning */}
       <body
         className={cn(
           "h-full flex flex-col font-sans antialiased",
-          geistSans.variable, // Use the variable property from the font object
-          geistMono.variable  // Use the variable property from the font object
+          geistSansVariable, // Use the variable assigned above
+          geistMonoVariable  // Use the variable assigned above
         )}
       >
-        <Header />
-        <main className="flex-grow container py-8">{children}</main>
-        <Footer />
-        <Toaster />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Header />
+          <main className="flex-grow container py-8">{children}</main>
+          <Footer />
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );
