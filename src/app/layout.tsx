@@ -29,7 +29,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning> {/* Removed h-full */}
       <body
         className={cn(
-          "h-full flex flex-col font-sans antialiased",
+          "min-h-screen flex flex-col font-sans antialiased", // Use min-h-screen instead of h-full on body
           geistSansVariable, // Use the variable assigned above
           geistMonoVariable  // Use the variable assigned above
         )}
