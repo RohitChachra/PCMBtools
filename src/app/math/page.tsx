@@ -624,7 +624,7 @@ export default function MathPage() {
                     <form onSubmit={handleGeometryCalculate} className="space-y-4">
                         <h3 className="text-lg font-medium">Inputs for {currentShapeConfig.label}</h3>
                          {selectedShape === 'triangle' && <p className="text-xs text-muted-foreground">Requires 3 sides (s1,s2,s3) for Perimeter/Heron's Area OR Base and Height for standard Area.</p>}
-                         {selectedShape === 'trapezium' && <p className="text-xs text-muted-foreground">Requires parallel bases (b1,b2) & height (h) for Area. Requires all 4 sides (b1,b2,s1,s2) for Perimeter.</p>}
+                         {selectedShape === 'trapezium' && <p className="text-xs text-muted-foreground">Requires parallel bases (a,b) & height (h) for Area. Requires all 4 sides (a,b,c,d) for Perimeter.</p>}
                          {selectedShape === 'rhombus' && <p className="text-xs text-muted-foreground">Requires diagonals (d1,d2) for Area OR side (a) for Perimeter.</p>}
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                             {currentShapeConfig.inputs.map((input) => (
@@ -695,7 +695,7 @@ export default function MathPage() {
                 <Calculator className="h-6 w-6" />
                Interactive Graphing Calculator
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="dark:text-muted-foreground">
                 Powered by Desmos API. Enter functions below and see them plotted.
             </CardDescription>
           </CardHeader>
@@ -777,7 +777,7 @@ export default function MathPage() {
 
             </CardContent>
             <CardFooter className="text-xs text-muted-foreground pt-4">
-                Graphing Examples: <code>y = sin(x)</code>, <code>f(x) = x^3 - x</code>, <code>r = cos(3θ)</code>. Use the keypad or type directly.
+                Graphing Examples: <code className="bg-muted dark:bg-muted/40 p-1 rounded-md">y = sin(x)</code>, <code className="bg-muted dark:bg-muted/40 p-1 rounded-md">f(x) = x^3 - x</code>, <code className="bg-muted dark:bg-muted/40 p-1 rounded-md">r = cos(3θ)</code>. Use the keypad or type directly.
             </CardFooter>
         </Card>
 

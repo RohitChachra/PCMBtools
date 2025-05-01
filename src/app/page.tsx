@@ -11,7 +11,8 @@ export default function Home() {
       description: 'Visualize complex functions with our interactive graphing tool.',
       href: '/math',
       icon: Sigma,
-      imageHint: 'math graphs functions',
+      imageHint: '+ MATHS =',
+      imageSrc: '/public/mathematics.png', // local or hosted image URL
     },
     {
       title: 'Chemistry',
@@ -19,6 +20,7 @@ export default function Home() {
       href: '/chemistry',
       icon: FlaskConical,
       imageHint: 'chemistry molecules structure',
+      imageSrc: '/public/chemistry.png', // replace with your custom chemistry image
     },
     {
       title: 'Physics',
@@ -26,6 +28,7 @@ export default function Home() {
       href: '/physics',
       icon: Atom,
       imageHint: 'physics formulas equations',
+      imageSrc: '/public/physics.png', // replace with your custom physics image
     },
   ];
 
@@ -45,13 +48,12 @@ export default function Home() {
           <Card key={feature.title} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
             <CardHeader className="items-center text-center p-4 bg-secondary rounded-t-lg">
                <div className="relative w-full h-40 mb-4 rounded-md overflow-hidden">
-                 <Image
-                    src={`https://picsum.photos/seed/${feature.title}/400/200`}
-                    alt={`${feature.title} illustration`}
-                    layout="fill"
-                    objectFit="cover"
-                    data-ai-hint={feature.imageHint}
-                 />
+                <Image
+                  src={feature.imageSrc}
+                  alt={feature.imageHint}
+                  layout="fill"
+                  objectFit="cover"
+                />
                </div>
               <CardTitle className="flex items-center gap-2 text-xl">
                 <feature.icon className="h-6 w-6 text-primary" />

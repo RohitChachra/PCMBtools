@@ -38,8 +38,7 @@ export default function RootLayout({
           attribute="class"
           defaultTheme="system"
           enableSystem
-          disableTransitionOnChange
-          suppressHydrationWarning // Add here as well
+          disableTransitionOnChange // Add here as well
         >
           <Header />
           <main className="flex-grow container py-8">{children}</main>
