@@ -14,9 +14,10 @@ export function OpticsCalculators() {
           { name: 'f', label: 'Focal Length (f)', unit: 'm' },
           { name: 'u', label: 'Object Distance (u)', unit: 'm' },
         ]}
-        formula="1/v = 1/f + 1/u" // Note: Using 1/v = 1/f - 1/(-u) for typical u<0
+        // The standard lens formula is 1/f = 1/v - 1/u. Rearranged for 1/v: 1/v = 1/f + 1/u
+        // Solving for v: v = (u*f) / (u+f)
+        formula="1/v = 1/f + 1/u"
         calculate={({ f, u }) => {
-          // Using v = (u*f)/(u+f) derivation assuming u is entered with its sign
           const denominator = u + f;
           if (denominator === 0) return null; // Avoid division by zero (object at -f)
           return (u * f) / denominator;
@@ -25,12 +26,12 @@ export function OpticsCalculators() {
         resultUnit="m"
         children={
           <p className="text-xs text-muted-foreground mt-2">
-            Use sign conventions: +f for converging lens, -f for diverging lens. Object distance u is usually negative for real objects. Result v > 0 for real image, v &lt; 0 for virtual image.
+            Lens Convention: +f converging, -f diverging. +u real object (usually left), -v virtual image (left), +v real image (right). Formula assumes object distance u is measured from the lens (+ if left).
           </p>
         }
       />
 
-      {/* Mirror Formula (Image Distance) */}
+       {/* Mirror Formula (Image Distance) */}
       <CalculatorCard
         title="Mirror Formula (Image Distance)"
         description="Calculate the image distance (v) for a spherical mirror."
@@ -38,9 +39,10 @@ export function OpticsCalculators() {
           { name: 'f', label: 'Focal Length (f)', unit: 'm' },
           { name: 'u', label: 'Object Distance (u)', unit: 'm' },
         ]}
+        // The standard mirror formula is 1/f = 1/u + 1/v. Rearranged for 1/v: 1/v = 1/f - 1/u
+        // Solving for v: v = (u*f) / (u-f)
         formula="1/v = 1/f - 1/u"
         calculate={({ f, u }) => {
-          // Using v = (u*f)/(u-f) derivation
           const denominator = u - f;
           if (denominator === 0) return null; // Avoid division by zero (object at f)
           return (u * f) / denominator;
@@ -49,10 +51,36 @@ export function OpticsCalculators() {
         resultUnit="m"
         children={
           <p className="text-xs text-muted-foreground mt-2">
-            Use sign conventions: +f for concave mirror, -f for convex mirror. Object distance u is usually negative for real objects. Result v > 0 for real image, v &lt; 0 for virtual image.
+            Mirror Convention: +f concave, -f convex. +u real object (usually left), +v real image (left), -v virtual image (right). Formula assumes object distance u is measured from the mirror (+ if left).
           </p>
         }
       />
+
+        {/* Lens/Mirror Formula (Focal Length) */}
+      <CalculatorCard
+        title="Lens/Mirror Formula (Focal Length)"
+        description="Calculate the focal length (f) using object and image distances."
+        inputFields={[
+          { name: 'u', label: 'Object Distance (u)', unit: 'm' },
+          { name: 'v', label: 'Image Distance (v)', unit: 'm' },
+        ]}
+        // Combined formula: 1/f = 1/u + 1/v -> f = (u*v)/(u+v)
+        // This works for both if sign conventions are applied correctly to u and v.
+        formula="1/f = 1/u + 1/v"
+        calculate={({ u, v }) => {
+          const sum = u + v;
+          if (sum === 0) return null; // Avoid division by zero
+          return (u * v) / sum;
+        }}
+        resultLabel="Focal Length (f)"
+        resultUnit="m"
+        children={
+          <p className="text-xs text-muted-foreground mt-2">
+            Enter object (u) and image (v) distances with correct signs based on lens/mirror conventions. Result +f indicates converging, -f indicates diverging.
+          </p>
+        }
+      />
+
 
       {/* Magnification Calculator */}
       <CalculatorCard
@@ -65,7 +93,7 @@ export function OpticsCalculators() {
         formula="m = -v / u"
         calculate={({ v, u }) => {
           if (u === 0) return null; // Avoid division by zero
-          return -v / u;
+          return -v / u; // Standard magnification formula
         }}
         resultLabel="Magnification (m)"
         resultUnit="(dimensionless)"
@@ -85,7 +113,7 @@ export function OpticsCalculators() {
         ]}
         formula="n = c / v"
         calculate={({ v_medium }) => {
-          if (v_medium === 0) return null; // Avoid division by zero
+          if (v_medium <= 0) return null; // Speed must be positive
           if (v_medium > c) return "Speed cannot exceed c"; // Physical constraint
           return c / v_medium;
         }}
