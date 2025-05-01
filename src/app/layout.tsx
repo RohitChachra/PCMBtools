@@ -8,15 +8,9 @@ import { cn } from '@/lib/utils';
 import { Toaster } from "@/components/ui/toaster"
 
 
-const geistSans = GeistSans({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
-
-const geistMono = GeistMono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
+// Correctly assign the font objects
+const geistSans = GeistSans;
+const geistMono = GeistMono;
 
 export const metadata: Metadata = {
   title: 'SciVerse - Explore Math, Chemistry & Physics',
@@ -33,8 +27,8 @@ export default function RootLayout({
       <body
         className={cn(
           "h-full flex flex-col font-sans antialiased",
-          geistSans.variable,
-          geistMono.variable
+          geistSans.variable, // Use the variable property from the font object
+          geistMono.variable  // Use the variable property from the font object
         )}
       >
         <Header />
