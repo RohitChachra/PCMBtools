@@ -16,6 +16,18 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'pubchem.ncbi.nlm.nih.gov',
+        port: '',
+        pathname: '/rest/pug/compound/cid/**/PNG', // Allow specific image paths
+      },
+       {
+        protocol: 'https',
+        hostname: 'via.placeholder.com', // Allow placeholder images
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 };
