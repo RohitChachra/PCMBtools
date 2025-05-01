@@ -8,11 +8,11 @@ export default function Home() {
   const features = [
     {
       title: 'Mathematics',
-      description: 'Visualize complex functions with our interactive graphing tool.',
+      description: 'Visualize complex functions and calculate geometric properties.',
       href: '/math',
       icon: Sigma,
-      imageHint: '+ MATHS =',
-      imageSrc: '/src/app/chemistry.png', // local or hosted image URL
+      imageHint: 'mathematics equations graphs', // Updated hint
+      imageSrc: 'https://picsum.photos/400/300', // Placeholder
     },
     {
       title: 'Chemistry',
@@ -20,7 +20,7 @@ export default function Home() {
       href: '/chemistry',
       icon: FlaskConical,
       imageHint: 'chemistry molecules structure',
-      imageSrc: '/src/app/chemistry.png', // replace with your custom chemistry image
+      imageSrc: 'https://picsum.photos/400/300', // Placeholder
     },
     {
       title: 'Physics',
@@ -28,7 +28,7 @@ export default function Home() {
       href: '/physics',
       icon: Atom,
       imageHint: 'physics formulas equations',
-      imageSrc: '/src/app/physics.png', // replace with your custom physics image
+      imageSrc: 'https://picsum.photos/400/300', // Placeholder
     },
   ];
 
@@ -47,15 +47,17 @@ export default function Home() {
         {features.map((feature) => (
           <Card key={feature.title} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
             <CardHeader className="items-center text-center p-4 bg-secondary rounded-t-lg">
+               {/* Ensure parent div has relative positioning and overflow hidden */}
                <div className="relative w-full h-40 mb-4 rounded-md overflow-hidden">
                 <Image
                   src={feature.imageSrc}
-                  alt={feature.imageHint}
-                  layout="fill"
-                  objectFit="cover"
+                  alt={feature.title} // Use title for better alt text
+                  layout="fill" // Make image fill the container
+                  objectFit="cover" // Crop image to cover the container
+                  data-ai-hint={feature.imageHint} // Keep AI hint
                 />
                </div>
-              <CardTitle className="flex items-center gap-2 text-xl">
+              <CardTitle className="flex items-center justify-center gap-2 text-xl"> {/* Added justify-center */}
                 <feature.icon className="h-6 w-6 text-primary" />
                 {feature.title}
               </CardTitle>
