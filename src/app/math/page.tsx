@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import Script from 'next/script';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectLabel, SelectSeparator } from "@/components/ui/select"; // Import SelectLabel and SelectSeparator
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectLabel, SelectSeparator, SelectGroup } from "@/components/ui/select"; // Import SelectGroup
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Calculator, Shapes } from 'lucide-react';
@@ -37,7 +37,7 @@ const shapeConfigs: Record<Shape, ShapeConfig> = {
     rectangle: { label: 'Rectangle', type: '2D', inputs: [{ name: 'l', label: 'Length' }, { name: 'w', label: 'Width' }], outputs: ['perimeter', 'area'] },
     triangle: { label: 'Triangle', type: '2D', inputs: [{ name: 's1', label: 'Side a' }, { name: 's2', label: 'Side b' }, { name: 's3', label: 'Side c'}, {name: 'base', label: 'Base (optional)'}, {name: 'height', label: 'Height (optional)'}], outputs: ['perimeter', 'area'] }, // Can calc area with sides (Heron's) or base/height
     circle: { label: 'Circle', type: '2D', inputs: [{ name: 'r', label: 'Radius' }], outputs: ['perimeter', 'area'] }, // Perimeter = Circumference
-    parallelogram: { label: 'Parallelogram', type: '2D', inputs: [{ name: 'b', label: 'Base' }, { name: 'h', label: 'Height'}, { name: 's', label: 'Side'}], outputs: ['perimeter', 'area'] },
+    parallelogram: { label: 'Parallelogram', type: '2D', inputs: [{ name: 'b', label: 'Base' }, { name: 'h', label: 'Height'}, { name: 'a', label: 'Side'}], outputs: ['perimeter', 'area'] },
     trapezium: { label: 'Trapezium (Trapezoid)', type: '2D', inputs: [{ name: 'b1', label: 'Base a' }, { name: 'b2', label: 'Base b'}, { name: 's1', label: 'Side c'}, { name: 's2', label: 'Side d'}, { name: 'h', label: 'Height'}], outputs: ['perimeter', 'area'] },
     rhombus: { label: 'Rhombus', type: '2D', inputs: [{ name: 'd1', label: 'Diagonal 1' }, { name: 'd2', label: 'Diagonal 2'}, { name: 'a', label: 'Side'}], outputs: ['perimeter', 'area'] },
     ellipse: { label: 'Ellipse', type: '2D', inputs: [{ name: 'a', label: 'Major Radius' }, { name: 'b', label: 'Minor Radius'}], outputs: ['perimeter', 'area'] }, // Perimeter is approximate
@@ -117,9 +117,9 @@ function calculateGeometry(shape: Shape, inputs: Record<string, number>): Calcul
                 return { perimeter: 2 * PI * r, area: PI * r * r }; // Perimeter = Circumference
             }
             case 'parallelogram': {
-                const { b, h, s } = inputs; // b = base, h = height, s = side
-                if (b <= 0 || h <= 0 || s <= 0) return "Base, height, and side must be positive.";
-                return { perimeter: 2 * (s + b), area: b * h };
+                const { b, h, a } = inputs; // b = base, h = height, a = side
+                if (b <= 0 || h <= 0 || a <= 0) return "Base, height, and side must be positive.";
+                return { perimeter: 2 * (a + b), area: b * h };
             }
             case 'trapezium': {
                 const { b1, b2, s1, s2, h } = inputs; // b1, b2 are parallel bases; s1, s2 are non-parallel sides
@@ -389,13 +389,21 @@ export default function MathPage() {
                 if (selectedShape === 'triangle' && (inputField.name === 's1' || inputField.name === 's2' || inputField.name === 's3') && geometryInputs['base'] && geometryInputs['height']) continue;
 
                 const value = geometryInputs[inputField.name];
-                if (value === undefined || value.trim() === '') {
+                // Check if the field is required implicitly (i.e., not optional like triangle base/height/sides)
+                const isRequired = !(
+                     (selectedShape === 'triangle' && ['s1', 's2', 's3', 'base', 'height'].includes(inputField.name)) ||
+                     (selectedShape === 'trapezium' && ['s1', 's2', 'h'].includes(inputField.name)) || // Allow calculating only perimeter or only area
+                     (selectedShape === 'rhombus' && ['d1', 'd2', 'a'].includes(inputField.name)) // Allow calculating only perimeter or only area
+                 );
+
+                if (isRequired && (value === undefined || value.trim() === '')) {
                     setGeometryError(`Missing required input: ${inputField.label}.`);
                     missingRequiredInput = true;
                     break; // Stop checking once one is missing
                 }
             }
     }
+
 
     if (missingRequiredInput) {
         validationError = true;
@@ -494,6 +502,7 @@ export default function MathPage() {
                             <SelectValue placeholder="Choose a shape..." />
                         </SelectTrigger>
                         <SelectContent>
+                            <SelectGroup>
                              <SelectLabel>2D Shapes</SelectLabel>
                             <SelectItem value="square">Square</SelectItem>
                             <SelectItem value="rectangle">Rectangle</SelectItem>
@@ -503,7 +512,9 @@ export default function MathPage() {
                             <SelectItem value="trapezium">Trapezium (Trapezoid)</SelectItem>
                             <SelectItem value="rhombus">Rhombus</SelectItem>
                             <SelectItem value="ellipse">Ellipse</SelectItem>
+                            </SelectGroup>
                              <SelectSeparator />
+                             <SelectGroup>
                              <SelectLabel>3D Shapes</SelectLabel>
                             <SelectItem value="cube">Cube</SelectItem>
                             <SelectItem value="cuboid">Cuboid</SelectItem>
@@ -513,6 +524,7 @@ export default function MathPage() {
                             <SelectItem value="hemisphere">Hemisphere</SelectItem>
                             <SelectItem value="pyramid">Pyramid (Square Base)</SelectItem>
                             <SelectItem value="frustum">Frustum of a Cone</SelectItem>
+                             </SelectGroup>
                         </SelectContent>
                     </Select>
                 </div>
