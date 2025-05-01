@@ -1,13 +1,14 @@
+
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react'; // Removed useState as it's not used
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+// Removed Card components as they are not used directly here
 import { KinematicsCalculators } from '@/components/physics/kinematics';
 import { DynamicsCalculators } from '@/components/physics/dynamics';
 import { WorkEnergyPowerCalculators } from '@/components/physics/work-energy-power';
@@ -15,7 +16,10 @@ import { GravitationCalculators } from '@/components/physics/gravitation';
 import { CircularMotionCalculators } from '@/components/physics/circular-motion';
 import { ElectrostaticsCalculators } from '@/components/physics/electrostatics';
 import { ThermodynamicsCalculators } from '@/components/physics/thermodynamics';
-import { WavesSoundCalculators } from '@/components/physics/waves-sound'; // Optional
+import { WavesSoundCalculators } from '@/components/physics/waves-sound';
+import { CurrentElectricityCalculators } from '@/components/physics/current-electricity'; // New import
+import { OpticsCalculators } from '@/components/physics/optics'; // New import
+import { MagnetismCalculators } from '@/components/physics/magnetism'; // New import
 
 interface CalculatorCategory {
   id: string;
@@ -70,8 +74,26 @@ const calculatorCategories: CalculatorCategory[] = [
    {
     id: 'waves_sound',
     title: 'Waves and Sound',
-    description: 'Calculate wave speed and frequency.',
+    description: 'Calculate wave speed, frequency, and wavelength.',
     component: WavesSoundCalculators,
+  },
+   { // New Category: Current Electricity
+    id: 'current_electricity',
+    title: 'Current Electricity',
+    description: "Calculate voltage, current, resistance (Ohm's Law), and power.",
+    component: CurrentElectricityCalculators,
+  },
+  { // New Category: Optics
+    id: 'optics',
+    title: 'Optics',
+    description: 'Calculate properties using lens/mirror formulas and refractive index.',
+    component: OpticsCalculators,
+  },
+  { // New Category: Magnetism
+    id: 'magnetism',
+    title: 'Magnetism',
+    description: 'Calculate magnetic forces on moving charges and current-carrying wires.',
+    component: MagnetismCalculators,
   },
 ];
 
