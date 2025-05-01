@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import Script from 'next/script';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectLabel, SelectSeparator } from "@/components/ui/select"; // Import SelectLabel and SelectSeparator
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Calculator, Shapes } from 'lucide-react';
@@ -123,19 +123,43 @@ function calculateGeometry(shape: Shape, inputs: Record<string, number>): Calcul
             }
             case 'trapezium': {
                 const { b1, b2, s1, s2, h } = inputs; // b1, b2 are parallel bases; s1, s2 are non-parallel sides
-                if (b1 <= 0 || b2 <= 0 || s1 <= 0 || s2 <= 0 || h <= 0) return "Bases, sides, and height must be positive.";
-                const area = 0.5 * (b1 + b2) * h;
-                const perimeter = b1 + b2 + s1 + s2;
+                let area : number | undefined = undefined;
+                let perimeter : number | undefined = undefined;
+
+                if (b1 > 0 && b2 > 0 && h > 0) {
+                    area = 0.5 * (b1 + b2) * h;
+                }
+                if (b1 > 0 && b2 > 0 && s1 > 0 && s2 > 0){
+                     perimeter = b1 + b2 + s1 + s2;
+                }
+
+                if (area === undefined && perimeter === undefined) return "Insufficient valid inputs for calculation.";
+
                 return { perimeter, area };
             }
              case 'rhombus': {
                  const { d1, d2, a } = inputs; // d1, d2 diagonals, a = side
-                 if (d1 <= 0 || d2 <= 0 || a <= 0) return "Diagonals and side must be positive.";
-                 // Validate if side 'a' is consistent with diagonals: a^2 must equal (d1/2)^2 + (d2/2)^2
-                 if (Math.abs(a*a - (d1/2)*(d1/2) - (d2/2)*(d2/2)) > 1e-9) { // Use tolerance for float comparison
-                     return "Inconsistent inputs: The provided side length does not match the diagonals.";
+                 let area : number | undefined = undefined;
+                 let perimeter : number | undefined = undefined;
+
+                 if (d1 > 0 && d2 > 0) {
+                      area = 0.5 * d1 * d2;
+                     // Validate consistency if side 'a' is also provided
+                      if (a > 0 && Math.abs(a*a - (d1/2)*(d1/2) - (d2/2)*(d2/2)) > 1e-9) {
+                          return "Inconsistent inputs: The provided side length does not match the diagonals.";
+                      }
                  }
-                 return { perimeter: 4 * a, area: 0.5 * d1 * d2 };
+                 if (a > 0) {
+                     perimeter = 4 * a;
+                     // Validate consistency if diagonals are also provided
+                     if (d1 > 0 && d2 > 0 && Math.abs(a*a - (d1/2)*(d1/2) - (d2/2)*(d2/2)) > 1e-9) {
+                         return "Inconsistent inputs: The provided side length does not match the diagonals.";
+                     }
+                 }
+
+                 if (area === undefined && perimeter === undefined) return "Insufficient inputs: Provide diagonals for area and/or side for perimeter.";
+
+                 return { perimeter, area };
              }
             case 'ellipse': {
                 const { a, b } = inputs; // a=major radius, b=minor radius
@@ -187,18 +211,13 @@ function calculateGeometry(shape: Shape, inputs: Record<string, number>): Calcul
                 if (b <= 0 || h <= 0) return "Base side and height must be positive.";
                 const slantHeightOfFace = Math.sqrt(h*h + (b/2)*(b/2)); // Slant height of a triangular face
                 const surfaceArea = b * b + 4 * (0.5 * b * slantHeightOfFace); // Base area + 4 * Triangle area
-                 // Formula provided by user seems different: SA = b^2 + 2b√(h^2/4 + (b/2)^2)
-                 // Let's verify: √(h^2 + (b/2)^2) is the slant height. 2b * slantHeight / 2 = b * slantHeight. 4 * (1/2 * b * slantHeight) = 2 * b * slantHeight.
-                 // User formula seems to calculate 2 * Area of a triangle? Let's recalculate.
-                 // SA = Base Area + Lateral Surface Area = b^2 + 4 * (Area of one triangular face)
-                 // Area of one triangular face = 0.5 * base_of_triangle * height_of_triangle = 0.5 * b * slantHeightOfFace
-                 // SA = b^2 + 4 * (0.5 * b * slantHeightOfFace) = b^2 + 2 * b * slantHeightOfFace
-                 const surfaceAreaCorrected = b*b + 2*b*slantHeightOfFace;
-                return { surfaceArea: surfaceAreaCorrected, volume: (1 / 3) * b * b * h };
+                 // Formula provided by user: SA = b^2 + 2b√(h^2 + (b/2)^2) - Corrected this matches now.
+                 //const surfaceAreaCorrected = b*b + 2*b*slantHeightOfFace; // User formula is equivalent to this
+                return { surfaceArea: surfaceArea, volume: (1 / 3) * b * b * h };
             }
              case 'frustum': { // Frustum of a Cone
                 const { R, r, h } = inputs; // R=Larger radius, r=Smaller radius, h=height
-                if (R <= 0 || r < 0 || h <= 0) return "Radii and height must be positive (smaller radius can be 0).";
+                if (R <= 0 || r < 0 || h <= 0) return "Radii must be positive (smaller radius can be 0 for cone).";
                 if (r > R) return "Smaller radius (r) cannot be greater than larger radius (R)."
                 const slantHeight = Math.sqrt(Math.pow(R - r, 2) + h * h);
                 const lateralSurfaceArea = PI * (R + r) * slantHeight;
@@ -334,90 +353,77 @@ export default function MathPage() {
     const numericInputs: Record<string, number> = {};
     let validationError = false;
     let missingRequiredInput = false;
+    let parsedFieldCount = 0; // Count how many fields were successfully parsed
 
-    // Check for required inputs based on shape logic, not just config
-    // e.g., Triangle needs either 3 sides OR base & height
-    let requiredFields = [...config.inputs];
-    if (selectedShape === 'triangle') {
-        // Special handling for triangle: check if EITHER (s1,s2,s3) OR (base, height) are present
-        const hasSides = geometryInputs['s1'] && geometryInputs['s2'] && geometryInputs['s3'];
-        const hasBaseHeight = geometryInputs['base'] && geometryInputs['height'];
-        if (!hasSides && !hasBaseHeight) {
-             setGeometryError(`For Triangle, provide either 3 sides OR base and height.`);
-             missingRequiredInput = true;
-             validationError = true; // Prevent calculation attempt
-        } else {
-            // If either group is present, we can proceed, calculation logic will handle it
-            // We still parse all provided inputs
-             requiredFields = config.inputs.filter(input => geometryInputs[input.name] !== undefined && geometryInputs[input.name].trim() !== '');
-        }
+    // Special validation logic based on shape
+    switch (selectedShape) {
+        case 'triangle':
+            const hasSides = geometryInputs['s1'] && geometryInputs['s2'] && geometryInputs['s3'];
+            const hasBaseHeight = geometryInputs['base'] && geometryInputs['height'];
+            if (!hasSides && !hasBaseHeight) {
+                setGeometryError("For Triangle, provide either 3 sides (for perimeter & area) OR base and height (for area).");
+                missingRequiredInput = true;
+            }
+            break;
+        case 'trapezium':
+            const hasAreaInputs = geometryInputs['b1'] && geometryInputs['b2'] && geometryInputs['h'];
+            const hasPerimeterInputs = geometryInputs['b1'] && geometryInputs['b2'] && geometryInputs['s1'] && geometryInputs['s2'];
+            if (!hasAreaInputs && !hasPerimeterInputs) {
+                setGeometryError("For Trapezium, provide bases & height (for area) AND/OR bases & sides (for perimeter).");
+                missingRequiredInput = true;
+            }
+            break;
+        case 'rhombus':
+            const hasDiagonals = geometryInputs['d1'] && geometryInputs['d2'];
+            const hasSide = geometryInputs['a'];
+            if (!hasDiagonals && !hasSide) {
+                setGeometryError("For Rhombus, provide diagonals (for area) AND/OR side (for perimeter).");
+                missingRequiredInput = true;
+            }
+            break;
+        default:
+             // Default: check if all mandatory inputs for the shape are provided
+            for (const inputField of config.inputs) {
+                // Skip optional fields for Triangle if the other set is provided
+                if (selectedShape === 'triangle' && (inputField.name === 'base' || inputField.name === 'height') && geometryInputs['s1'] && geometryInputs['s2'] && geometryInputs['s3']) continue;
+                if (selectedShape === 'triangle' && (inputField.name === 's1' || inputField.name === 's2' || inputField.name === 's3') && geometryInputs['base'] && geometryInputs['height']) continue;
 
-    } else if (selectedShape === 'rhombus') {
-        // Rhombus needs side 'a' for perimeter, and d1, d2 for area
-        const hasDiagonals = geometryInputs['d1'] && geometryInputs['d2'];
-        const hasSide = geometryInputs['a'];
-        if (!hasDiagonals && !hasSide) {
-             setGeometryError(`For Rhombus, provide diagonals for area AND/OR side for perimeter.`);
-             missingRequiredInput = true;
-             validationError = true;
-        } else {
-             requiredFields = config.inputs.filter(input => geometryInputs[input.name] !== undefined && geometryInputs[input.name].trim() !== '');
-        }
-    } else if (selectedShape === 'trapezium') {
-         // Needs b1, b2, h for area; needs b1, b2, s1, s2 for perimeter
-         const hasBasesHeight = geometryInputs['b1'] && geometryInputs['b2'] && geometryInputs['h'];
-         const hasSides = geometryInputs['s1'] && geometryInputs['s2'];
-         if (!hasBasesHeight && !(geometryInputs['b1'] && geometryInputs['b2'] && hasSides)) {
-              setGeometryError(`For Trapezium, provide bases and height for area AND/OR bases and sides for perimeter.`);
-              missingRequiredInput = true;
-              validationError = true;
-         } else {
-              requiredFields = config.inputs.filter(input => geometryInputs[input.name] !== undefined && geometryInputs[input.name].trim() !== '');
-         }
+                const value = geometryInputs[inputField.name];
+                if (value === undefined || value.trim() === '') {
+                    setGeometryError(`Missing required input: ${inputField.label}.`);
+                    missingRequiredInput = true;
+                    break; // Stop checking once one is missing
+                }
+            }
     }
-    else {
-        // Default check: Ensure all inputs listed in config are provided (unless optional logic is added later)
+
+    if (missingRequiredInput) {
+        validationError = true;
+    } else {
+        // Parse provided inputs to numbers, allowing for partial calculations (e.g., only perimeter)
         for (const inputField of config.inputs) {
             const value = geometryInputs[inputField.name];
-             // Allow optional inputs to be missing if not required by the *calculation logic* itself
-            if (value === undefined || value.trim() === '') {
-                // Example: Triangle base/height are optional if sides are given
-                if (selectedShape === 'triangle' && (inputField.name === 'base' || inputField.name === 'height')) continue;
-                if (selectedShape === 'rhombus' && inputField.name === 'a' && geometryInputs['d1'] && geometryInputs['d2']) continue; // Side optional if diagonals given for area
-                if (selectedShape === 'rhombus' && (inputField.name === 'd1' || inputField.name === 'd2') && geometryInputs['a']) continue; // Diagonals optional if side given for perimeter
-                 if (selectedShape === 'trapezium' && (inputField.name === 's1' || inputField.name === 's2') && geometryInputs['b1'] && geometryInputs['b2'] && geometryInputs['h']) continue; // Sides optional if bases/height given for area
-                 if (selectedShape === 'trapezium' && inputField.name === 'h' && geometryInputs['b1'] && geometryInputs['b2'] && geometryInputs['s1'] && geometryInputs['s2']) continue; // Height optional if bases/sides given for perimeter
-
-                setGeometryError(`Missing required input: ${inputField.label}.`);
-                missingRequiredInput = true;
-                validationError = true;
-                break;
-            }
-        }
-    }
-
-
-    // Parse provided inputs to numbers
-    if (!missingRequiredInput) {
-        for (const inputField of requiredFields) { // Iterate over potentially relevant fields
-            const value = geometryInputs[inputField.name];
-            // Only parse if value is actually provided
             if (value !== undefined && value.trim() !== '') {
                 const numValue = parseFloat(value);
-                 // Check for non-numeric or non-positive values where required
-                 // Note: Rhombus diagonals *can* be used if side isn't, etc. Calculation logic handles validity.
-                if (isNaN(numValue) || (numValue <= 0 && inputField.name !== 'r' && selectedShape === 'frustum')) { // Allow smaller radius r=0 for frustum -> cone
-                     setGeometryError(`Invalid or non-positive input for ${inputField.label}. Please enter a valid positive number.`);
-                     validationError = true;
-                     break;
-                 }
-                 numericInputs[inputField.name] = numValue;
+                if (isNaN(numValue) || (numValue <= 0 && !(selectedShape === 'frustum' && inputField.name === 'r' && numValue === 0))) { // Allow r=0 for frustum->cone
+                    setGeometryError(`Invalid or non-positive input for ${inputField.label}. Please enter a valid positive number (except r=0 for Frustum).`);
+                    validationError = true;
+                    break;
+                }
+                numericInputs[inputField.name] = numValue;
+                parsedFieldCount++;
             } else {
-                 // Store 0 or NaN for optional fields not provided, calculation logic needs to handle this
-                 numericInputs[inputField.name] = NaN;
+                // Store NaN for fields that were not provided, but might be needed by some calculations
+                numericInputs[inputField.name] = NaN;
             }
         }
     }
+
+     // Ensure at least one calculation is possible with the parsed inputs
+     if (!validationError && parsedFieldCount === 0) {
+         setGeometryError("No valid inputs provided for calculation.");
+         validationError = true;
+     }
 
 
      if (validationError) {
@@ -427,13 +433,19 @@ export default function MathPage() {
     const result = calculateGeometry(selectedShape, numericInputs);
 
     if (result === null) {
-      setGeometryError("Calculation failed. Please check your inputs (e.g., ensure values are positive and consistent).");
+      setGeometryError("Calculation failed. Check inputs (positive values, consistent dimensions).");
     } else if (typeof result === 'string') {
         // Handle specific error messages from calculation function
         setGeometryError(result);
     } else {
-      setGeometryResult(result);
-      toast({ title: "Calculation Success", description: `Calculated properties for ${config.label}.` });
+        // Check if ANY result value is valid before declaring success
+        const hasValidResult = Object.values(result).some(val => val !== undefined && !isNaN(val));
+        if (hasValidResult) {
+             setGeometryResult(result);
+             toast({ title: "Calculation Success", description: `Calculated properties for ${config.label}.` });
+        } else {
+             setGeometryError("Could not calculate any properties with the provided inputs.");
+        }
     }
   };
 
@@ -482,7 +494,7 @@ export default function MathPage() {
                             <SelectValue placeholder="Choose a shape..." />
                         </SelectTrigger>
                         <SelectContent>
-                             <SelectItem value="" disabled>--- 2D Shapes ---</SelectItem>
+                             <SelectLabel>2D Shapes</SelectLabel>
                             <SelectItem value="square">Square</SelectItem>
                             <SelectItem value="rectangle">Rectangle</SelectItem>
                             <SelectItem value="triangle">Triangle</SelectItem>
@@ -491,7 +503,8 @@ export default function MathPage() {
                             <SelectItem value="trapezium">Trapezium (Trapezoid)</SelectItem>
                             <SelectItem value="rhombus">Rhombus</SelectItem>
                             <SelectItem value="ellipse">Ellipse</SelectItem>
-                            <SelectItem value="" disabled>--- 3D Shapes ---</SelectItem>
+                             <SelectSeparator />
+                             <SelectLabel>3D Shapes</SelectLabel>
                             <SelectItem value="cube">Cube</SelectItem>
                             <SelectItem value="cuboid">Cuboid</SelectItem>
                             <SelectItem value="sphere">Sphere</SelectItem>
@@ -521,7 +534,7 @@ export default function MathPage() {
                                         placeholder={`Enter ${input.label.toLowerCase()}`}
                                         // Make inputs required visually, but validation handles logic
                                         // required
-                                        min="0.000001" // Default min, calculation logic handles <= 0 errors
+                                        min="0" // Allow 0, especially for frustum's smaller radius
                                         aria-label={`Input for ${input.label}`}
                                         className="text-base sm:text-sm" // Adjust text size for consistency
                                     />
@@ -548,16 +561,20 @@ export default function MathPage() {
                         <AlertTitle className="text-primary">Results for {currentShapeConfig.label}</AlertTitle>
                         <AlertDescription>
                             <ul className="list-disc pl-5 space-y-1 mt-2 text-sm">
-                                {currentResult.perimeter !== undefined && <li>Perimeter/Circumference: <code className="font-semibold">{currentResult.perimeter.toFixed(4)}</code></li>}
-                                {currentResult.area !== undefined && <li>Area: <code className="font-semibold">{currentResult.area.toFixed(4)}</code></li>}
-                                {currentResult.slantHeight !== undefined && <li>Slant Height (l): <code className="font-semibold">{currentResult.slantHeight.toFixed(4)}</code></li>}
-                                {currentResult.lateralSurfaceArea !== undefined && <li>Lateral Surface Area: <code className="font-semibold">{currentResult.lateralSurfaceArea.toFixed(4)}</code></li>}
-                                {currentResult.surfaceArea !== undefined && <li>Total Surface Area: <code className="font-semibold">{currentResult.surfaceArea.toFixed(4)}</code></li>}
-                                {currentResult.volume !== undefined && <li>Volume: <code className="font-semibold">{currentResult.volume.toFixed(4)}</code></li>}
+                                {currentResult.perimeter !== undefined && !isNaN(currentResult.perimeter) && <li>Perimeter/Circumference: <code className="font-semibold">{currentResult.perimeter.toFixed(4)}</code></li>}
+                                {currentResult.area !== undefined && !isNaN(currentResult.area) && <li>Area: <code className="font-semibold">{currentResult.area.toFixed(4)}</code></li>}
+                                {currentResult.slantHeight !== undefined && !isNaN(currentResult.slantHeight) && <li>Slant Height (l): <code className="font-semibold">{currentResult.slantHeight.toFixed(4)}</code></li>}
+                                {currentResult.lateralSurfaceArea !== undefined && !isNaN(currentResult.lateralSurfaceArea) && <li>Lateral Surface Area: <code className="font-semibold">{currentResult.lateralSurfaceArea.toFixed(4)}</code></li>}
+                                {currentResult.surfaceArea !== undefined && !isNaN(currentResult.surfaceArea) && <li>Total Surface Area: <code className="font-semibold">{currentResult.surfaceArea.toFixed(4)}</code></li>}
+                                {currentResult.volume !== undefined && !isNaN(currentResult.volume) && <li>Volume: <code className="font-semibold">{currentResult.volume.toFixed(4)}</code></li>}
                             </ul>
                              {selectedShape === 'ellipse' && <p className="text-xs text-muted-foreground mt-2">Note: Ellipse circumference is an approximation.</p>}
-                             {selectedShape === 'triangle' && !currentResult.perimeter && <p className="text-xs text-muted-foreground mt-2">Note: Perimeter requires all 3 side lengths.</p>}
-                             {selectedShape === 'triangle' && !currentResult.area && <p className="text-xs text-muted-foreground mt-2">Note: Area requires either 3 sides (Heron's formula) or base and height.</p>}
+                             {(selectedShape === 'triangle' && (currentResult.perimeter === undefined || isNaN(currentResult.perimeter))) && <p className="text-xs text-muted-foreground mt-2">Note: Perimeter requires all 3 side lengths.</p>}
+                             {(selectedShape === 'triangle' && (currentResult.area === undefined || isNaN(currentResult.area))) && <p className="text-xs text-muted-foreground mt-2">Note: Area requires either 3 sides (Heron's formula) or base and height.</p>}
+                             {(selectedShape === 'trapezium' && (currentResult.perimeter === undefined || isNaN(currentResult.perimeter))) && <p className="text-xs text-muted-foreground mt-2">Note: Perimeter requires all 4 side lengths (b1, b2, s1, s2).</p>}
+                             {(selectedShape === 'trapezium' && (currentResult.area === undefined || isNaN(currentResult.area))) && <p className="text-xs text-muted-foreground mt-2">Note: Area requires parallel bases (b1, b2) and height (h).</p>}
+                             {(selectedShape === 'rhombus' && (currentResult.perimeter === undefined || isNaN(currentResult.perimeter))) && <p className="text-xs text-muted-foreground mt-2">Note: Perimeter requires the side length (a).</p>}
+                             {(selectedShape === 'rhombus' && (currentResult.area === undefined || isNaN(currentResult.area))) && <p className="text-xs text-muted-foreground mt-2">Note: Area requires both diagonals (d1, d2).</p>}
                         </AlertDescription>
                     </Alert>
                  )}
