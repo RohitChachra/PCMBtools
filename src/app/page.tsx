@@ -12,7 +12,7 @@ export default function Home() {
       href: '/math',
       icon: Sigma,
       imageHint: '+ MATHS =',
-      imageSrc: '/public/mathematics.png', // local or hosted image URL
+      imageSrc: '/src/app/chemistry.png', // local or hosted image URL
     },
     {
       title: 'Chemistry',
@@ -20,7 +20,7 @@ export default function Home() {
       href: '/chemistry',
       icon: FlaskConical,
       imageHint: 'chemistry molecules structure',
-      imageSrc: '/public/chemistry.png', // replace with your custom chemistry image
+      imageSrc: '/src/app/chemistry.png', // replace with your custom chemistry image
     },
     {
       title: 'Physics',
@@ -28,7 +28,7 @@ export default function Home() {
       href: '/physics',
       icon: Atom,
       imageHint: 'physics formulas equations',
-      imageSrc: '/public/physics.png', // replace with your custom physics image
+      imageSrc: '/src/app/physics.png', // replace with your custom physics image
     },
   ];
 
