@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import Script from 'next/script';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectLabel, SelectSeparator, SelectGroup } from "@/components/ui/select"; // Import SelectGroup
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectLabel, SelectSeparator, SelectGroup } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Calculator, Shapes } from 'lucide-react';
@@ -26,7 +26,6 @@ interface ShapeConfig {
     label: string;
     type: '2D' | '3D';
     inputs: { name: string; label: string; unit?: string }[];
-    // Added slantHeight and lateralSurfaceArea for Frustum
     outputs: ('perimeter' | 'area' | 'surfaceArea' | 'volume' | 'slantHeight' | 'lateralSurfaceArea')[];
 }
 
@@ -210,9 +209,7 @@ function calculateGeometry(shape: Shape, inputs: Record<string, number>): Calcul
                 const { b, h } = inputs; // b = base side, h = height
                 if (b <= 0 || h <= 0) return "Base side and height must be positive.";
                 const slantHeightOfFace = Math.sqrt(h*h + (b/2)*(b/2)); // Slant height of a triangular face
-                const surfaceArea = b * b + 4 * (0.5 * b * slantHeightOfFace); // Base area + 4 * Triangle area
-                 // Formula provided by user: SA = b^2 + 2b√(h^2 + (b/2)^2) - Corrected this matches now.
-                 //const surfaceAreaCorrected = b*b + 2*b*slantHeightOfFace; // User formula is equivalent to this
+                const surfaceArea = b * b + 2*b*slantHeightOfFace; // Base area + lateral area (2*b*slantHeight)
                 return { surfaceArea: surfaceArea, volume: (1 / 3) * b * b * h };
             }
              case 'frustum': { // Frustum of a Cone
@@ -244,7 +241,7 @@ export default function MathPage() {
   const [expression, setExpression] = useState<string>('y = x^2');
   const [expressions, setExpressions] = useState<{ id: string; latex: string }[]>([]);
   const [isDesmosLoaded, setIsDesmosLoaded] = useState(false);
-  const [isGraphVisible, setIsGraphVisible] = useState(true); // State to control graph visibility, default to true
+  const [isGraphVisible, setIsGraphVisible] = useState(true); // Keep graph visible by default
   const { toast } = useToast();
 
   // --- Geometry State ---
@@ -254,34 +251,79 @@ export default function MathPage() {
   const [geometryError, setGeometryError] = useState<string | null>(null);
 
   // --- Desmos Logic ---
+
+  // Effect to initialize Desmos when the script is loaded and the ref is available
   useEffect(() => {
-    // Initialize Desmos immediately if the graph is visible and the script is loaded
-    if (isGraphVisible && isDesmosLoaded && calculatorRef.current && !desmosInstanceRef.current) {
-      try {
-        desmosInstanceRef.current = window.Desmos.GraphingCalculator(calculatorRef.current, {
-           keypad: true,
-           expressions: true,
-           settingsMenu: true, // Enable settings menu for better usability
-        });
-        desmosInstanceRef.current.setBlank(); // Start with a blank graph
-        // Load initial/saved expressions if any
-        expressions.forEach(expr => desmosInstanceRef.current.setExpression({ id: expr.id, latex: expr.latex }));
-      } catch (error) {
-        console.error("Failed to initialize Desmos:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load the graphing calculator. Please refresh the page.",
-          variant: "destructive",
-        });
+    // Ensure this runs only on the client
+    if (typeof window === 'undefined') return;
+
+    const initializeDesmos = () => {
+      if (isDesmosLoaded && calculatorRef.current && !desmosInstanceRef.current) {
+        try {
+          console.log("Initializing Desmos...");
+          desmosInstanceRef.current = window.Desmos.GraphingCalculator(calculatorRef.current, {
+            keypad: true,
+            expressions: true,
+            settingsMenu: true, // Enable settings menu for better usability
+          });
+          desmosInstanceRef.current.setBlank(); // Start with a blank graph
+          // Load initial/saved expressions if any
+          expressions.forEach(expr => desmosInstanceRef.current.setExpression({ id: expr.id, latex: expr.latex }));
+          console.log("Desmos Initialized Successfully.");
+        } catch (error) {
+          console.error("Failed to initialize Desmos:", error);
+          toast({
+            title: "Error",
+            description: "Failed to load the graphing calculator. Please refresh the page.",
+            variant: "destructive",
+          });
+        }
+      } else {
+         console.log("Desmos initialization prerequisites not met:", { isDesmosLoaded, calculatorRefCurrent: !!calculatorRef.current, desmosInstanceRefCurrent: !!desmosInstanceRef.current });
       }
+    };
+
+    // Attempt initialization immediately if conditions are met
+    initializeDesmos();
+
+    // Cleanup function to destroy Desmos instance on component unmount
+    return () => {
+      if (desmosInstanceRef.current) {
+        console.log("Destroying Desmos instance.");
+        try {
+           desmosInstanceRef.current.destroy();
+           desmosInstanceRef.current = null;
+        } catch (error) {
+           console.error("Error destroying Desmos instance:", error);
+        }
+      }
+    };
+  }, [isDesmosLoaded]); // Rerun only when isDesmosLoaded changes
+
+  // Effect to handle expressions update
+  useEffect(() => {
+    if (desmosInstanceRef.current) {
+      // Clear existing expressions before setting new ones to avoid duplicates if necessary
+      // desmosInstanceRef.current.setBlank(); // Optional: Uncomment if you want to clear graph on expression list change outside add/remove
+      expressions.forEach(expr => {
+        try {
+           // Check if expression already exists before setting
+           const existingExpr = desmosInstanceRef.current.getExpressions().find((e: any) => e.id === expr.id);
+           if (!existingExpr) {
+              desmosInstanceRef.current.setExpression({ id: expr.id, latex: expr.latex });
+           }
+        } catch (error) {
+           console.error(`Error setting expression ${expr.id}:`, error);
+        }
+      });
     }
-  }, [isGraphVisible, isDesmosLoaded, toast, expressions]); // Dependency on isGraphVisible to re-init if it becomes visible later (though it defaults to true now)
+  }, [expressions]); // Rerun when expressions array changes
 
 
   const handleAddExpression = (e: React.FormEvent) => {
     e.preventDefault();
     if (!desmosInstanceRef.current) {
-        toast({ title: "Error", description: "Calculator is not active.", variant: "destructive" });
+        toast({ title: "Error", description: "Calculator is not active. Please wait.", variant: "destructive" });
         return;
     }
      if (!expression.trim()) {
@@ -290,12 +332,12 @@ export default function MathPage() {
     }
     try {
         const newId = `expr-${Date.now()}`;
-        desmosInstanceRef.current.setExpression({ id: newId, latex: expression });
+        // Directly update state, useEffect will sync with Desmos
         setExpressions(prev => [...prev, { id: newId, latex: expression }]);
         setExpression(''); // Clear input after adding
     } catch (error) {
-        console.error("Invalid expression:", error);
-        toast({ title: "Invalid Expression", description: "Please enter a valid mathematical expression (e.g., y = sin(x), f(x) = x^3 - x).", variant: "destructive" });
+        console.error("Error adding expression:", error);
+        toast({ title: "Invalid Expression", description: "Please check the expression format (e.g., y = sin(x)).", variant: "destructive" });
     }
   };
 
@@ -303,6 +345,7 @@ export default function MathPage() {
     if (!desmosInstanceRef.current) return;
     try {
         desmosInstanceRef.current.removeExpression({ id: idToRemove });
+        // Update state, useEffect will reflect this (though Desmos instance is already updated)
         setExpressions(prev => prev.filter(expr => expr.id !== idToRemove));
     } catch (error) {
         console.error("Failed to remove expression:", error);
@@ -310,7 +353,6 @@ export default function MathPage() {
     }
   };
 
-  // Removed toggleGraphVisibility function as it's no longer needed
 
   // --- Geometry Logic ---
   const handleShapeChange = (value: string) => {
@@ -392,7 +434,15 @@ export default function MathPage() {
                      (selectedShape === 'rhombus' && ['d1', 'd2', 'a'].includes(inputField.name)) // Allow calculating only perimeter or only area
                  );
 
-                if (isRequired && (value === undefined || value.trim() === '')) {
+                 // Specific check for trapezium: h is always required for area
+                 if (selectedShape === 'trapezium' && inputField.name === 'h' && (value === undefined || value.trim() === '')) {
+                      // If trying to calculate only perimeter, h is not strictly needed
+                      if(!(geometryInputs['b1'] && geometryInputs['b2'] && geometryInputs['s1'] && geometryInputs['s2'])) {
+                           setGeometryError(`Missing required input for area calculation: ${inputField.label}.`);
+                           missingRequiredInput = true;
+                           break;
+                      }
+                 } else if (isRequired && (value === undefined || value.trim() === '')) {
                     setGeometryError(`Missing required input: ${inputField.label}.`);
                     missingRequiredInput = true;
                     break; // Stop checking once one is missing
@@ -409,7 +459,8 @@ export default function MathPage() {
             const value = geometryInputs[inputField.name];
             if (value !== undefined && value.trim() !== '') {
                 const numValue = parseFloat(value);
-                if (isNaN(numValue) || (numValue <= 0 && !(selectedShape === 'frustum' && inputField.name === 'r' && numValue === 0))) { // Allow r=0 for frustum->cone
+                // Allow r=0 for frustum->cone, but generally require positive values
+                if (isNaN(numValue) || (numValue <= 0 && !(selectedShape === 'frustum' && inputField.name === 'r' && numValue === 0))) {
                     setGeometryError(`Invalid or non-positive input for ${inputField.label}. Please enter a valid positive number (except r=0 for Frustum).`);
                     validationError = true;
                     break;
@@ -437,7 +488,7 @@ export default function MathPage() {
     const result = calculateGeometry(selectedShape, numericInputs);
 
     if (result === null) {
-      setGeometryError("Calculation failed. Check inputs (positive values, consistent dimensions).");
+      setGeometryError("Calculation failed. Check inputs (positive values, consistent dimensions, avoid division by zero).");
     } else if (typeof result === 'string') {
         // Handle specific error messages from calculation function
         setGeometryError(result);
@@ -448,7 +499,7 @@ export default function MathPage() {
              setGeometryResult(result);
              toast({ title: "Calculation Success", description: `Calculated properties for ${config.label}.` });
         } else {
-             setGeometryError("Could not calculate any properties with the provided inputs.");
+             setGeometryError("Could not calculate any properties with the provided inputs (check for potential issues like division by zero or invalid combinations).");
         }
     }
   };
@@ -460,17 +511,17 @@ export default function MathPage() {
     <>
       <Script
         src="https://www.desmos.com/api/v1.8/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"
-        strategy="lazyOnload" // Keep lazyOnload or adjust if needed
+        strategy="lazyOnload" // Keep lazyOnload
         onLoad={() => {
-            console.log("Desmos API script loaded.");
+            console.log("Desmos API script loaded successfully.");
             setIsDesmosLoaded(true);
-            // Now that it's loaded, useEffect will handle initialization if isGraphVisible is true
+            // Initialization is now handled by useEffect based on isDesmosLoaded state
         }}
         onError={(e) => {
             console.error("Failed to load Desmos API script:", e);
              toast({
-                title: "Error Loading Graph",
-                description: "Could not load the Desmos graphing script. Try refreshing.",
+                title: "Error Loading Graph Script",
+                description: "Could not load the Desmos graphing script. Graphing functionality may be unavailable. Try refreshing.",
                 variant: "destructive",
                 duration: 9000,
             });
@@ -529,6 +580,9 @@ export default function MathPage() {
                  {currentShapeConfig && (
                     <form onSubmit={handleGeometryCalculate} className="space-y-4">
                         <h3 className="text-lg font-medium">Inputs for {currentShapeConfig.label}</h3>
+                         {selectedShape === 'triangle' && <p className="text-xs text-muted-foreground">Requires 3 sides (s1,s2,s3) for Perimeter/Heron's Area OR Base and Height for standard Area.</p>}
+                         {selectedShape === 'trapezium' && <p className="text-xs text-muted-foreground">Requires parallel bases (b1,b2) & height (h) for Area. Requires all 4 sides (b1,b2,s1,s2) for Perimeter.</p>}
+                         {selectedShape === 'rhombus' && <p className="text-xs text-muted-foreground">Requires diagonals (d1,d2) for Area OR side (a) for Perimeter.</p>}
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                             {currentShapeConfig.inputs.map((input) => (
                                 <div key={input.name} className="space-y-1">
@@ -541,9 +595,8 @@ export default function MathPage() {
                                         value={geometryInputs[input.name] ?? ''}
                                         onChange={handleGeometryInputChange}
                                         placeholder={`Enter ${input.label.toLowerCase()}`}
-                                        // Make inputs required visually, but validation handles logic
-                                        // required
-                                        min="0" // Allow 0, especially for frustum's smaller radius
+                                        // 'required' attribute handled by form validation logic
+                                        min={input.name === 'r' && selectedShape === 'frustum' ? "0" : undefined} // Allow 0 only for frustum smaller radius
                                         aria-label={`Input for ${input.label}`}
                                         className="text-base sm:text-sm" // Adjust text size for consistency
                                     />
@@ -559,7 +612,7 @@ export default function MathPage() {
                  {geometryError && (
                     <Alert variant="destructive">
                         <Calculator className="h-4 w-4" />
-                        <AlertTitle>Input Error</AlertTitle>
+                        <AlertTitle>Input/Calculation Error</AlertTitle>
                         <AlertDescription>{geometryError}</AlertDescription>
                     </Alert>
                  )}
@@ -577,8 +630,9 @@ export default function MathPage() {
                                 {currentResult.surfaceArea !== undefined && !isNaN(currentResult.surfaceArea) && <li>Total Surface Area: <code className="font-semibold">{currentResult.surfaceArea.toFixed(4)}</code></li>}
                                 {currentResult.volume !== undefined && !isNaN(currentResult.volume) && <li>Volume: <code className="font-semibold">{currentResult.volume.toFixed(4)}</code></li>}
                             </ul>
-                             {selectedShape === 'ellipse' && <p className="text-xs text-muted-foreground mt-2">Note: Ellipse circumference is an approximation.</p>}
-                             {(selectedShape === 'triangle' && (currentResult.perimeter === undefined || isNaN(currentResult.perimeter))) && <p className="text-xs text-muted-foreground mt-2">Note: Perimeter requires all 3 side lengths.</p>}
+                             {/* Conditional Notes */}
+                             {selectedShape === 'ellipse' && (currentResult.perimeter !== undefined && !isNaN(currentResult.perimeter)) && <p className="text-xs text-muted-foreground mt-2">Note: Ellipse circumference is an approximation.</p>}
+                             {(selectedShape === 'triangle' && (currentResult.perimeter === undefined || isNaN(currentResult.perimeter))) && <p className="text-xs text-muted-foreground mt-2">Note: Perimeter requires all 3 side lengths (s1, s2, s3).</p>}
                              {(selectedShape === 'triangle' && (currentResult.area === undefined || isNaN(currentResult.area))) && <p className="text-xs text-muted-foreground mt-2">Note: Area requires either 3 sides (Heron's formula) or base and height.</p>}
                              {(selectedShape === 'trapezium' && (currentResult.perimeter === undefined || isNaN(currentResult.perimeter))) && <p className="text-xs text-muted-foreground mt-2">Note: Perimeter requires all 4 side lengths (b1, b2, s1, s2).</p>}
                              {(selectedShape === 'trapezium' && (currentResult.area === undefined || isNaN(currentResult.area))) && <p className="text-xs text-muted-foreground mt-2">Note: Area requires parallel bases (b1, b2) and height (h).</p>}
@@ -624,7 +678,7 @@ export default function MathPage() {
               {expressions.length > 0 && (
                 <div className="mb-4 space-y-2">
                     <h3 className="text-sm font-medium text-muted-foreground">Current Expressions:</h3>
-                    <ul className="list-none p-0 m-0 space-y-1 max-h-40 overflow-y-auto border rounded-md p-2 bg-muted/20"> {/* Added scroll, border, padding */}
+                    <ul className="list-none p-0 m-0 space-y-1 max-h-40 overflow-y-auto border rounded-md p-2 bg-muted/20">
                         {expressions.map((expr) => (
                             <li key={expr.id} className="flex items-center justify-between bg-background dark:bg-muted/50 p-2 rounded-md text-sm shadow-sm">
                                 <code className="font-mono">{expr.latex}</code>
@@ -633,7 +687,7 @@ export default function MathPage() {
                                     size="sm"
                                     onClick={() => handleRemoveExpression(expr.id)}
                                     aria-label={`Remove expression ${expr.latex}`}
-                                    className="text-destructive hover:bg-destructive/10 px-2 py-1 h-auto" // Destructive variant for remove, adjusted padding/height
+                                    className="text-destructive hover:bg-destructive/10 px-2 py-1 h-auto"
                                 >
                                     Remove
                                 </Button>
@@ -644,10 +698,11 @@ export default function MathPage() {
               )}
 
               {/* Desmos Container */}
-              <div ref={calculatorRef} style={{ width: '100%', height: '500px' }} className="border rounded-md shadow-inner bg-background dark:bg-card">
+              {/* Added key to potentially help React re-render if necessary, though ref should handle it */}
+              <div ref={calculatorRef} key="desmos-graph" style={{ width: '100%', height: '500px' }} className="border rounded-md shadow-inner bg-background dark:bg-card">
                  {!isDesmosLoaded && <div className="flex items-center justify-center h-full text-muted-foreground p-4">Loading Calculator Script...</div>}
-                 {isDesmosLoaded && !desmosInstanceRef.current && <div className="flex items-center justify-center h-full text-muted-foreground p-4">Initializing Graph...</div>}
-                 {/* Desmos will populate this div */}
+                 {isDesmosLoaded && !desmosInstanceRef.current && <div className="flex items-center justify-center h-full text-muted-foreground p-4">Initializing Graph... Please wait.</div>}
+                 {/* Desmos will populate this div when initialized */}
               </div>
 
             </CardContent>
@@ -661,3 +716,5 @@ export default function MathPage() {
     </>
   );
 }
+
+    
