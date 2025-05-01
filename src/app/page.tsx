@@ -12,23 +12,23 @@ export default function Home() {
       href: '/math',
       icon: Sigma,
       imageHint: 'mathematics equations graphs', // Updated hint
-      imageSrc: 'https://picsum.photos/400/300', // Placeholder
+      imageSrc: '/mathematics.jpg',
     },
     {
       title: 'Chemistry',
       description: 'Explore molecular structures and properties with PubChem data.',
       href: '/chemistry',
       icon: FlaskConical,
-      imageHint: 'chemistry molecules structure',
-      imageSrc: 'https://picsum.photos/400/300', // Placeholder
+      imageHint: 'chemistry molecules structure', // Updated hint
+      imageSrc: '/chemistry.jpg',
     },
     {
-      title: 'Physics',
+      title: 'Physics', // Added description
       description: 'Calculate solutions to physics problems across various topics.',
       href: '/physics',
       icon: Atom,
       imageHint: 'physics formulas equations',
-      imageSrc: 'https://picsum.photos/400/300', // Placeholder
+      imageSrc: '/physics.jpg', // Placeholder
     },
   ];
 
