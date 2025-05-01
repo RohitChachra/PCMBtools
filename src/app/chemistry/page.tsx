@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -24,7 +25,7 @@ async function getCompound(query: string): Promise<Compound | null> {
   try {
     // 1. Get CID from name/formula
     const identifierUrl = `${baseUrl}/compound/name/${encodedQuery}/cids/JSON`;
-    const identifierResponse = await fetch(identifierUrl);
+    let identifierResponse = await fetch(identifierUrl); // Changed const to let
 
     if (!identifierResponse.ok) {
       // Try searching by formula if name search fails
