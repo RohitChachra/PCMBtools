@@ -26,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning> {/* Removed h-full */}
+    <html lang="en" suppressHydrationWarning>
       <body
         className={cn(
           "min-h-screen flex flex-col font-sans antialiased", // Use min-h-screen instead of h-full on body

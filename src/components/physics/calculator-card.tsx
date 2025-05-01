@@ -1,3 +1,4 @@
+
 import React, { useState, type ReactNode } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,7 +18,7 @@ interface CalculatorCardProps {
   title: string;
   description: string;
   inputFields: InputField[];
-  formula: string; // e.g., "v = u + at"
+  formula: string; // e.g., "v = u + at" or "η = (W / Q<sub>H</sub>) * 100"
   calculate: (inputs: Record<string, number>) => number | string | null; // Can return null for errors
   resultLabel: string;
   resultUnit: string;
@@ -93,7 +94,13 @@ export function CalculatorCard({
       <CardHeader>
         <CardTitle className="text-lg">{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
-         <p className="text-sm text-muted-foreground pt-1">Formula: <code className="bg-muted px-1 py-0.5 rounded">{formula}</code></p>
+         {/* Use dangerouslySetInnerHTML to render HTML in the formula */}
+         <p className="text-sm text-muted-foreground pt-1">
+            Formula: <code
+                className="bg-muted px-1 py-0.5 rounded"
+                dangerouslySetInnerHTML={{ __html: formula }}
+             />
+         </p>
       </CardHeader>
       <form onSubmit={handleCalculate}>
         <CardContent className="space-y-4">

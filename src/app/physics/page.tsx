@@ -69,7 +69,7 @@ const calculatorCategories: CalculatorCategory[] = [
   },
    {
     id: 'waves_sound',
-    title: 'Waves and Sound (Optional)',
+    title: 'Waves and Sound',
     description: 'Calculate wave speed and frequency.',
     component: WavesSoundCalculators,
   },

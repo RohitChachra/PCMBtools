@@ -1,3 +1,4 @@
+
 import { CalculatorCard } from './calculator-card';
 
 const R = 8.314; // Ideal gas constant (J K⁻¹ mol⁻¹)
@@ -34,7 +35,7 @@ export function ThermodynamicsCalculators() {
           { name: 'T', label: 'Absolute Temperature (T)', unit: 'K' },
           { name: 'V', label: 'Volume (V)', unit: 'm³' },
         ]}
-        formula="PV = nRT  =>  P = nRT / V"
+        formula="PV = nRT  =&gt;  P = nRT / V" // Use HTML entity for '>' if needed, though should be fine in code block
         calculate={({ n, T, V }) => {
           if (V === 0) return null; // Avoid division by zero
           if (T < 0) return null; // Temperature must be absolute (Kelvin)
@@ -55,9 +56,11 @@ export function ThermodynamicsCalculators() {
         description="Calculate the efficiency (η) of a heat engine."
         inputFields={[
           { name: 'W', label: 'Work Output (W)', unit: 'J' },
+          // Use HTML entity or keep sub tag for dangerouslySetInnerHTML
           { name: 'QH', label: 'Heat Input (Q<sub class="text-[0.6em] align-baseline">H</sub>)', unit: 'J' },
         ]}
-        formula="η = (W / Q<sub class='text-[0.6em] align-baseline'>H</sub>) * 100"
+        // Ensure the formula string uses standard HTML <sub> tags
+        formula="η = (W / Q<sub>H</sub>) * 100"
         calculate={({ W, QH }) => {
           if (QH === 0) return null; // Avoid division by zero
           if (W < 0 || QH < 0) return null; // Work and Heat Input should be positive for standard efficiency calc
