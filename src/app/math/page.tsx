@@ -256,20 +256,37 @@ export default function MathPage() {
   // Effect to initialize Desmos when the script is loaded and the ref is available
   useEffect(() => {
     // Ensure this runs only on the client
-    if (typeof window === 'undefined' || !isDesmosLoaded || !calculatorRef.current || desmosInstanceRef.current) {
-        return;
+    if (typeof window === 'undefined' || !isDesmosLoaded || !calculatorRef.current) {
+      return;
     }
 
+    // Check if an instance already exists to prevent re-initialization
+    if (desmosInstanceRef.current) {
+      console.log("Desmos already initialized.");
+      // Ensure initialization state is correct if re-mounting
+      if (!isDesmosInitialized) setIsDesmosInitialized(true);
+      return;
+    }
+
+
     console.log("Attempting to initialize Desmos...");
+    let instance: any = null;
     try {
-      desmosInstanceRef.current = window.Desmos.GraphingCalculator(calculatorRef.current, {
+      instance = window.Desmos.GraphingCalculator(calculatorRef.current, {
         keypad: true,
         expressions: true,
         settingsMenu: true,
       });
-      desmosInstanceRef.current.setBlank(); // Start with a blank graph
+      desmosInstanceRef.current = instance; // Assign to ref
+      instance.setBlank(); // Start with a blank graph
       // Load initial/saved expressions if any
-      expressions.forEach(expr => desmosInstanceRef.current.setExpression({ id: expr.id, latex: expr.latex }));
+      expressions.forEach(expr => {
+        try {
+             instance.setExpression({ id: expr.id, latex: expr.latex });
+        } catch (exprError) {
+            console.error(`Error setting expression ${expr.id} on init:`, exprError);
+        }
+      });
       setIsDesmosInitialized(true); // Set initialization flag
       console.log("Desmos Initialized Successfully.");
     } catch (error) {
@@ -284,19 +301,20 @@ export default function MathPage() {
 
     // Cleanup function to destroy Desmos instance on component unmount
     return () => {
-      if (desmosInstanceRef.current) {
+      if (instance) { // Use the local `instance` variable for cleanup
         console.log("Destroying Desmos instance.");
         try {
-           desmosInstanceRef.current.destroy();
-           desmosInstanceRef.current = null;
-           setIsDesmosInitialized(false); // Reset initialization state
+           instance.destroy();
+           desmosInstanceRef.current = null; // Clear the ref
+           setIsDesmosInitialized(false); // Reset initialization state for next mount
         } catch (error) {
            console.error("Error destroying Desmos instance:", error);
         }
       }
     };
   // Rerun effect if script loads or container ref becomes available
-  }, [isDesmosLoaded, calculatorRef]); // Removed dependency on expressions here, handled separately
+  // Removed isDesmosInitialized from dependency array to prevent potential loops
+  }, [isDesmosLoaded, calculatorRef]); // Keep expressions dependency here to reload if they change externally
 
   // Effect to handle expressions update (sync with Desmos instance)
   useEffect(() => {
@@ -734,7 +752,7 @@ export default function MathPage() {
               >
                 {/* Loading/Error Overlay */}
                 {!isDesmosInitialized && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-background/80 dark:bg-card/80 z-10">
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/80 dark:bg-card/80 z-10 pointer-events-none"> {/* Added pointer-events-none */}
                     <div className="text-center p-4">
                       {!isDesmosLoaded ? (
                         <>
@@ -754,7 +772,7 @@ export default function MathPage() {
                     </div>
                   </div>
                 )}
-                 {/* The actual Desmos graph will render here, under the overlay if not initialized */}
+                 {/* The actual Desmos graph will render here, potentially under the overlay if not initialized */}
               </div>
 
             </CardContent>
@@ -768,3 +786,5 @@ export default function MathPage() {
     </>
   );
 }
+
+    
