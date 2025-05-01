@@ -10,7 +10,7 @@ import Script from 'next/script';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Calculator, Shapes } from 'lucide-react'; // Added Shapes icon
+import { Calculator, Shapes } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -20,90 +20,200 @@ declare global {
 
 // --- Geometry Calculation Types and Logic ---
 
-type Shape = 'square' | 'rectangle' | 'circle' | 'triangle' | 'cube' | 'cuboid' | 'sphere' | 'cylinder' | 'cone';
+type Shape = 'square' | 'rectangle' | 'triangle' | 'circle' | 'parallelogram' | 'trapezium' | 'rhombus' | 'ellipse' | 'cube' | 'cuboid' | 'sphere' | 'cylinder' | 'cone' | 'hemisphere' | 'pyramid' | 'frustum';
 
 interface ShapeConfig {
     label: string;
     type: '2D' | '3D';
     inputs: { name: string; label: string; unit?: string }[];
-    outputs: ('perimeter' | 'area' | 'surfaceArea' | 'volume')[];
+    // Added slantHeight and lateralSurfaceArea for Frustum
+    outputs: ('perimeter' | 'area' | 'surfaceArea' | 'volume' | 'slantHeight' | 'lateralSurfaceArea')[];
 }
 
+// Define shape configurations based on user list
 const shapeConfigs: Record<Shape, ShapeConfig> = {
-    square: { label: 'Square', type: '2D', inputs: [{ name: 's', label: 'Side Length' }], outputs: ['perimeter', 'area'] },
+    // 2D Shapes
+    square: { label: 'Square', type: '2D', inputs: [{ name: 'a', label: 'Side Length' }], outputs: ['perimeter', 'area'] },
     rectangle: { label: 'Rectangle', type: '2D', inputs: [{ name: 'l', label: 'Length' }, { name: 'w', label: 'Width' }], outputs: ['perimeter', 'area'] },
+    triangle: { label: 'Triangle', type: '2D', inputs: [{ name: 's1', label: 'Side a' }, { name: 's2', label: 'Side b' }, { name: 's3', label: 'Side c'}, {name: 'base', label: 'Base (optional)'}, {name: 'height', label: 'Height (optional)'}], outputs: ['perimeter', 'area'] }, // Can calc area with sides (Heron's) or base/height
     circle: { label: 'Circle', type: '2D', inputs: [{ name: 'r', label: 'Radius' }], outputs: ['perimeter', 'area'] }, // Perimeter = Circumference
-    triangle: { label: 'Triangle (Base/Height)', type: '2D', inputs: [{ name: 'b', label: 'Base' }, { name: 'h', label: 'Height' } /* Add sides for perimeter? */], outputs: ['area'] }, // Simplified for now
-    cube: { label: 'Cube', type: '3D', inputs: [{ name: 's', label: 'Side Length' }], outputs: ['surfaceArea', 'volume'] },
+    parallelogram: { label: 'Parallelogram', type: '2D', inputs: [{ name: 'b', label: 'Base' }, { name: 'h', label: 'Height'}, { name: 's', label: 'Side'}], outputs: ['perimeter', 'area'] },
+    trapezium: { label: 'Trapezium (Trapezoid)', type: '2D', inputs: [{ name: 'b1', label: 'Base a' }, { name: 'b2', label: 'Base b'}, { name: 's1', label: 'Side c'}, { name: 's2', label: 'Side d'}, { name: 'h', label: 'Height'}], outputs: ['perimeter', 'area'] },
+    rhombus: { label: 'Rhombus', type: '2D', inputs: [{ name: 'd1', label: 'Diagonal 1' }, { name: 'd2', label: 'Diagonal 2'}, { name: 'a', label: 'Side'}], outputs: ['perimeter', 'area'] },
+    ellipse: { label: 'Ellipse', type: '2D', inputs: [{ name: 'a', label: 'Major Radius' }, { name: 'b', label: 'Minor Radius'}], outputs: ['perimeter', 'area'] }, // Perimeter is approximate
+
+    // 3D Shapes
+    cube: { label: 'Cube', type: '3D', inputs: [{ name: 'a', label: 'Side Length' }], outputs: ['surfaceArea', 'volume'] },
     cuboid: { label: 'Cuboid', type: '3D', inputs: [{ name: 'l', label: 'Length' }, { name: 'w', label: 'Width' }, { name: 'h', label: 'Height' }], outputs: ['surfaceArea', 'volume'] },
     sphere: { label: 'Sphere', type: '3D', inputs: [{ name: 'r', label: 'Radius' }], outputs: ['surfaceArea', 'volume'] },
     cylinder: { label: 'Cylinder', type: '3D', inputs: [{ name: 'r', label: 'Radius' }, { name: 'h', label: 'Height' }], outputs: ['surfaceArea', 'volume'] },
-    cone: { label: 'Cone', type: '3D', inputs: [{ name: 'r', label: 'Radius' }, { name: 'h', label: 'Height' }], outputs: ['surfaceArea', 'volume'] },
+    cone: { label: 'Cone', type: '3D', inputs: [{ name: 'r', label: 'Radius' }, { name: 'h', label: 'Height' }], outputs: ['surfaceArea', 'volume', 'slantHeight'] }, // Calculate slant height internally or display? Let's display.
+    hemisphere: { label: 'Hemisphere', type: '3D', inputs: [{ name: 'r', label: 'Radius' }], outputs: ['surfaceArea', 'volume'] },
+    pyramid: { label: 'Pyramid (Square Base)', type: '3D', inputs: [{ name: 'b', label: 'Base Side' }, { name: 'h', label: 'Height' }], outputs: ['surfaceArea', 'volume'] },
+    frustum: { label: 'Frustum of a Cone', type: '3D', inputs: [{ name: 'R', label: 'Larger Radius' }, { name: 'r', label: 'Smaller Radius' }, { name: 'h', label: 'Height' }], outputs: ['slantHeight', 'lateralSurfaceArea', 'surfaceArea', 'volume'] }, // SA = Total Surface Area
 };
 
 interface CalculationResult {
     perimeter?: number;
     area?: number;
-    surfaceArea?: number;
+    surfaceArea?: number; // Total Surface Area
     volume?: number;
+    slantHeight?: number;
+    lateralSurfaceArea?: number;
 }
 
-function calculateGeometry(shape: Shape, inputs: Record<string, number>): CalculationResult | null {
+function calculateGeometry(shape: Shape, inputs: Record<string, number>): CalculationResult | string | null {
     const PI = Math.PI;
     try {
         switch (shape) {
+            // --- 2D SHAPES ---
             case 'square': {
-                const { s } = inputs;
-                if (s <= 0) return null;
-                return { perimeter: 4 * s, area: s * s };
+                const { a } = inputs;
+                if (a <= 0) return "Side length must be positive.";
+                return { perimeter: 4 * a, area: a * a };
             }
             case 'rectangle': {
                 const { l, w } = inputs;
-                if (l <= 0 || w <= 0) return null;
+                if (l <= 0 || w <= 0) return "Length and width must be positive.";
                 return { perimeter: 2 * (l + w), area: l * w };
+            }
+            case 'triangle': {
+                const { s1, s2, s3, base, height } = inputs; // s1, s2, s3 are sides a, b, c
+                let perimeter: number | undefined = undefined;
+                let area: number | undefined = undefined;
+
+                // Check if sides form a valid triangle for perimeter and Heron's area
+                if (s1 > 0 && s2 > 0 && s3 > 0) {
+                    if (s1 + s2 > s3 && s1 + s3 > s2 && s2 + s3 > s1) {
+                        perimeter = s1 + s2 + s3;
+                        // Use Heron's formula if base/height aren't validly provided
+                        if (!(base > 0 && height > 0)) {
+                            const s = perimeter / 2;
+                            area = Math.sqrt(s * (s - s1) * (s - s2) * (s - s3));
+                        }
+                    } else {
+                        // Sides don't form a triangle, but maybe base/height are provided
+                        if (!(base > 0 && height > 0)) return "Invalid triangle sides provided, and no valid base/height for area calculation.";
+                    }
+                }
+
+                // Calculate area using base and height if provided and valid
+                if (base > 0 && height > 0) {
+                    area = 0.5 * base * height;
+                     // If perimeter wasn't calculated via sides, try using base if it matches a side
+                    if (perimeter === undefined) {
+                        if (base === s1 || base === s2 || base === s3) {
+                           // Cannot determine perimeter only from base and height
+                        }
+                    }
+                }
+
+                if (perimeter === undefined && area === undefined) return "Insufficient valid inputs (provide 3 sides, or base and height).";
+                return { perimeter, area }; // Return whatever could be calculated
             }
             case 'circle': {
                 const { r } = inputs;
-                if (r <= 0) return null;
-                return { perimeter: 2 * PI * r, area: PI * r * r }; // Circumference as perimeter
+                if (r <= 0) return "Radius must be positive.";
+                return { perimeter: 2 * PI * r, area: PI * r * r }; // Perimeter = Circumference
             }
-             case 'triangle': {
-                const { b, h } = inputs;
-                if (b <= 0 || h <= 0) return null;
-                return { area: 0.5 * b * h }; // Perimeter requires side lengths
+            case 'parallelogram': {
+                const { b, h, s } = inputs; // b = base, h = height, s = side
+                if (b <= 0 || h <= 0 || s <= 0) return "Base, height, and side must be positive.";
+                return { perimeter: 2 * (s + b), area: b * h };
             }
+            case 'trapezium': {
+                const { b1, b2, s1, s2, h } = inputs; // b1, b2 are parallel bases; s1, s2 are non-parallel sides
+                if (b1 <= 0 || b2 <= 0 || s1 <= 0 || s2 <= 0 || h <= 0) return "Bases, sides, and height must be positive.";
+                const area = 0.5 * (b1 + b2) * h;
+                const perimeter = b1 + b2 + s1 + s2;
+                return { perimeter, area };
+            }
+             case 'rhombus': {
+                 const { d1, d2, a } = inputs; // d1, d2 diagonals, a = side
+                 if (d1 <= 0 || d2 <= 0 || a <= 0) return "Diagonals and side must be positive.";
+                 // Validate if side 'a' is consistent with diagonals: a^2 must equal (d1/2)^2 + (d2/2)^2
+                 if (Math.abs(a*a - (d1/2)*(d1/2) - (d2/2)*(d2/2)) > 1e-9) { // Use tolerance for float comparison
+                     return "Inconsistent inputs: The provided side length does not match the diagonals.";
+                 }
+                 return { perimeter: 4 * a, area: 0.5 * d1 * d2 };
+             }
+            case 'ellipse': {
+                const { a, b } = inputs; // a=major radius, b=minor radius
+                if (a <= 0 || b <= 0) return "Major and minor radii must be positive.";
+                if (b > a) return "Minor radius (b) cannot be greater than major radius (a).";
+                const area = PI * a * b;
+                // Ramanujan's approximation for circumference (perimeter)
+                const h = Math.pow(a - b, 2) / Math.pow(a + b, 2);
+                const perimeter = PI * (a + b) * (1 + (3 * h) / (10 + Math.sqrt(4 - 3 * h)));
+                // Alternative simpler approximation: π[3(a + b) - √((3a + b)(a + 3b))] - check if this is better/simpler
+                // const perimeterApprox2 = PI * (3 * (a + b) - Math.sqrt((3 * a + b) * (a + 3 * b)));
+                return { perimeter, area };
+            }
+
+            // --- 3D SHAPES ---
             case 'cube': {
-                const { s } = inputs;
-                if (s <= 0) return null;
-                return { surfaceArea: 6 * s * s, volume: s * s * s };
+                const { a } = inputs; // a = side length
+                if (a <= 0) return "Side length must be positive.";
+                return { surfaceArea: 6 * a * a, volume: a * a * a };
             }
             case 'cuboid': {
                 const { l, w, h } = inputs;
-                if (l <= 0 || w <= 0 || h <= 0) return null;
+                if (l <= 0 || w <= 0 || h <= 0) return "Length, width, and height must be positive.";
                 return { surfaceArea: 2 * (l * w + l * h + w * h), volume: l * w * h };
             }
             case 'sphere': {
                 const { r } = inputs;
-                if (r <= 0) return null;
+                if (r <= 0) return "Radius must be positive.";
                 return { surfaceArea: 4 * PI * r * r, volume: (4 / 3) * PI * r * r * r };
             }
             case 'cylinder': {
                 const { r, h } = inputs;
-                if (r <= 0 || h <= 0) return null;
-                return { surfaceArea: 2 * PI * r * (r + h), volume: PI * r * r * h };
+                if (r <= 0 || h <= 0) return "Radius and height must be positive.";
+                return { surfaceArea: 2 * PI * r * (h + r), volume: PI * r * r * h };
             }
             case 'cone': {
                 const { r, h } = inputs;
-                if (r <= 0 || h <= 0) return null;
-                const l = Math.sqrt(r * r + h * h); // Slant height
-                return { surfaceArea: PI * r * (r + l), volume: (1 / 3) * PI * r * r * h };
+                if (r <= 0 || h <= 0) return "Radius and height must be positive.";
+                const slantHeight = Math.sqrt(r * r + h * h);
+                return { surfaceArea: PI * r * (slantHeight + r), volume: (1 / 3) * PI * r * r * h, slantHeight };
+            }
+             case 'hemisphere': {
+                const { r } = inputs;
+                if (r <= 0) return "Radius must be positive.";
+                return { surfaceArea: 3 * PI * r * r, volume: (2 / 3) * PI * r * r * r };
+            }
+             case 'pyramid': { // Assuming square base pyramid
+                const { b, h } = inputs; // b = base side, h = height
+                if (b <= 0 || h <= 0) return "Base side and height must be positive.";
+                const slantHeightOfFace = Math.sqrt(h*h + (b/2)*(b/2)); // Slant height of a triangular face
+                const surfaceArea = b * b + 4 * (0.5 * b * slantHeightOfFace); // Base area + 4 * Triangle area
+                 // Formula provided by user seems different: SA = b^2 + 2b√(h^2/4 + (b/2)^2)
+                 // Let's verify: √(h^2 + (b/2)^2) is the slant height. 2b * slantHeight / 2 = b * slantHeight. 4 * (1/2 * b * slantHeight) = 2 * b * slantHeight.
+                 // User formula seems to calculate 2 * Area of a triangle? Let's recalculate.
+                 // SA = Base Area + Lateral Surface Area = b^2 + 4 * (Area of one triangular face)
+                 // Area of one triangular face = 0.5 * base_of_triangle * height_of_triangle = 0.5 * b * slantHeightOfFace
+                 // SA = b^2 + 4 * (0.5 * b * slantHeightOfFace) = b^2 + 2 * b * slantHeightOfFace
+                 const surfaceAreaCorrected = b*b + 2*b*slantHeightOfFace;
+                return { surfaceArea: surfaceAreaCorrected, volume: (1 / 3) * b * b * h };
+            }
+             case 'frustum': { // Frustum of a Cone
+                const { R, r, h } = inputs; // R=Larger radius, r=Smaller radius, h=height
+                if (R <= 0 || r < 0 || h <= 0) return "Radii and height must be positive (smaller radius can be 0).";
+                if (r > R) return "Smaller radius (r) cannot be greater than larger radius (R)."
+                const slantHeight = Math.sqrt(Math.pow(R - r, 2) + h * h);
+                const lateralSurfaceArea = PI * (R + r) * slantHeight;
+                const surfaceArea = lateralSurfaceArea + PI * R * R + PI * r * r; // Total Surface Area (TSA)
+                const volume = (1 / 3) * PI * h * (R * R + R * r + r * r);
+                return { slantHeight, lateralSurfaceArea, surfaceArea, volume };
             }
             default:
+                // Should not happen if selectedShape is always valid
+                 console.error("Unknown shape selected:", shape);
                 return null;
         }
     } catch (error) {
         console.error("Geometry calculation error:", error);
-        return null;
+         return "An internal error occurred during calculation.";
     }
 }
 
@@ -133,11 +243,8 @@ export default function MathPage() {
            expressions: true,
            settingsMenu: true, // Enable settings menu for better usability
         });
-        // Set initial expression if needed, or maybe clear it
         desmosInstanceRef.current.setBlank(); // Start with a blank graph
-        // Or restore previous expressions if you save them
         expressions.forEach(expr => desmosInstanceRef.current.setExpression({ id: expr.id, latex: expr.latex }));
-
       } catch (error) {
         console.error("Failed to initialize Desmos:", error);
         toast({
@@ -147,19 +254,7 @@ export default function MathPage() {
         });
       }
     }
-
-    // Cleanup function for Desmos
-    return () => {
-       // No need to destroy if switching visibility, only on unmount? Let's keep destroy for full cleanup.
-       // If the component unmounts completely:
-      // if (desmosInstanceRef.current) {
-      //   if (typeof desmosInstanceRef.current.destroy === 'function') {
-      //      desmosInstanceRef.current.destroy();
-      //   }
-      //   desmosInstanceRef.current = null;
-      // }
-    };
-  // Re-run when isGraphVisible changes to initialize Desmos when it becomes visible
+    // No cleanup needed just for visibility toggle, only on component unmount if necessary
   }, [isGraphVisible, isDesmosLoaded, toast, expressions]);
 
 
@@ -197,15 +292,20 @@ export default function MathPage() {
 
   const toggleGraphVisibility = () => {
     setIsGraphVisible(prev => !prev);
-     if (!isGraphVisible && desmosInstanceRef.current) {
-         // Optional: Clear expressions when hiding if desired
-         // desmosInstanceRef.current.setBlank();
-         // setExpressions([]);
-     }
+     // Load Desmos script when 'Show Graph' is clicked for the first time
+     // This requires the <Script> tag strategy to be `lazyOnload` or similar deferred loading.
+     // If strategy="afterInteractive" (default or similar), it might load earlier.
   };
 
   // --- Geometry Logic ---
   const handleShapeChange = (value: string) => {
+      if (value === '') {
+          setSelectedShape('');
+          setGeometryInputs({});
+          setGeometryResult(null);
+          setGeometryError(null);
+          return;
+      }
       const shape = value as Shape;
       setSelectedShape(shape);
       setGeometryInputs({}); // Reset inputs when shape changes
@@ -233,16 +333,92 @@ export default function MathPage() {
     const config = shapeConfigs[selectedShape];
     const numericInputs: Record<string, number> = {};
     let validationError = false;
+    let missingRequiredInput = false;
 
-    for (const inputField of config.inputs) {
-        const value = geometryInputs[inputField.name];
-        if (value === undefined || value.trim() === '' || isNaN(parseFloat(value)) || parseFloat(value) <= 0) {
-            setGeometryError(`Invalid or non-positive input for ${inputField.label}. Please enter a valid positive number.`);
-            validationError = true;
-            break;
+    // Check for required inputs based on shape logic, not just config
+    // e.g., Triangle needs either 3 sides OR base & height
+    let requiredFields = [...config.inputs];
+    if (selectedShape === 'triangle') {
+        // Special handling for triangle: check if EITHER (s1,s2,s3) OR (base, height) are present
+        const hasSides = geometryInputs['s1'] && geometryInputs['s2'] && geometryInputs['s3'];
+        const hasBaseHeight = geometryInputs['base'] && geometryInputs['height'];
+        if (!hasSides && !hasBaseHeight) {
+             setGeometryError(`For Triangle, provide either 3 sides OR base and height.`);
+             missingRequiredInput = true;
+             validationError = true; // Prevent calculation attempt
+        } else {
+            // If either group is present, we can proceed, calculation logic will handle it
+            // We still parse all provided inputs
+             requiredFields = config.inputs.filter(input => geometryInputs[input.name] !== undefined && geometryInputs[input.name].trim() !== '');
         }
-        numericInputs[inputField.name] = parseFloat(value);
+
+    } else if (selectedShape === 'rhombus') {
+        // Rhombus needs side 'a' for perimeter, and d1, d2 for area
+        const hasDiagonals = geometryInputs['d1'] && geometryInputs['d2'];
+        const hasSide = geometryInputs['a'];
+        if (!hasDiagonals && !hasSide) {
+             setGeometryError(`For Rhombus, provide diagonals for area AND/OR side for perimeter.`);
+             missingRequiredInput = true;
+             validationError = true;
+        } else {
+             requiredFields = config.inputs.filter(input => geometryInputs[input.name] !== undefined && geometryInputs[input.name].trim() !== '');
+        }
+    } else if (selectedShape === 'trapezium') {
+         // Needs b1, b2, h for area; needs b1, b2, s1, s2 for perimeter
+         const hasBasesHeight = geometryInputs['b1'] && geometryInputs['b2'] && geometryInputs['h'];
+         const hasSides = geometryInputs['s1'] && geometryInputs['s2'];
+         if (!hasBasesHeight && !(geometryInputs['b1'] && geometryInputs['b2'] && hasSides)) {
+              setGeometryError(`For Trapezium, provide bases and height for area AND/OR bases and sides for perimeter.`);
+              missingRequiredInput = true;
+              validationError = true;
+         } else {
+              requiredFields = config.inputs.filter(input => geometryInputs[input.name] !== undefined && geometryInputs[input.name].trim() !== '');
+         }
     }
+    else {
+        // Default check: Ensure all inputs listed in config are provided (unless optional logic is added later)
+        for (const inputField of config.inputs) {
+            const value = geometryInputs[inputField.name];
+             // Allow optional inputs to be missing if not required by the *calculation logic* itself
+            if (value === undefined || value.trim() === '') {
+                // Example: Triangle base/height are optional if sides are given
+                if (selectedShape === 'triangle' && (inputField.name === 'base' || inputField.name === 'height')) continue;
+                if (selectedShape === 'rhombus' && inputField.name === 'a' && geometryInputs['d1'] && geometryInputs['d2']) continue; // Side optional if diagonals given for area
+                if (selectedShape === 'rhombus' && (inputField.name === 'd1' || inputField.name === 'd2') && geometryInputs['a']) continue; // Diagonals optional if side given for perimeter
+                 if (selectedShape === 'trapezium' && (inputField.name === 's1' || inputField.name === 's2') && geometryInputs['b1'] && geometryInputs['b2'] && geometryInputs['h']) continue; // Sides optional if bases/height given for area
+                 if (selectedShape === 'trapezium' && inputField.name === 'h' && geometryInputs['b1'] && geometryInputs['b2'] && geometryInputs['s1'] && geometryInputs['s2']) continue; // Height optional if bases/sides given for perimeter
+
+                setGeometryError(`Missing required input: ${inputField.label}.`);
+                missingRequiredInput = true;
+                validationError = true;
+                break;
+            }
+        }
+    }
+
+
+    // Parse provided inputs to numbers
+    if (!missingRequiredInput) {
+        for (const inputField of requiredFields) { // Iterate over potentially relevant fields
+            const value = geometryInputs[inputField.name];
+            // Only parse if value is actually provided
+            if (value !== undefined && value.trim() !== '') {
+                const numValue = parseFloat(value);
+                 // Check for non-numeric or non-positive values where required
+                 // Note: Rhombus diagonals *can* be used if side isn't, etc. Calculation logic handles validity.
+                if (isNaN(numValue) || (numValue <= 0 && inputField.name !== 'r' && selectedShape === 'frustum')) { // Allow smaller radius r=0 for frustum -> cone
+                     setGeometryError(`Invalid or non-positive input for ${inputField.label}. Please enter a valid positive number.`);
+                     validationError = true;
+                     break;
+                 }
+                 numericInputs[inputField.name] = numValue;
+            } else {
+                 // Store 0 or NaN for optional fields not provided, calculation logic needs to handle this
+                 numericInputs[inputField.name] = NaN;
+            }
+        }
+    }
+
 
      if (validationError) {
       return;
@@ -251,7 +427,10 @@ export default function MathPage() {
     const result = calculateGeometry(selectedShape, numericInputs);
 
     if (result === null) {
-      setGeometryError("Calculation failed. Please check your inputs (e.g., ensure values are positive).");
+      setGeometryError("Calculation failed. Please check your inputs (e.g., ensure values are positive and consistent).");
+    } else if (typeof result === 'string') {
+        // Handle specific error messages from calculation function
+        setGeometryError(result);
     } else {
       setGeometryResult(result);
       toast({ title: "Calculation Success", description: `Calculated properties for ${config.label}.` });
@@ -259,12 +438,13 @@ export default function MathPage() {
   };
 
   const currentShapeConfig = selectedShape ? shapeConfigs[selectedShape] : null;
+  const currentResult = geometryResult; // Use a temporary variable for easier access in JSX
 
   return (
     <>
       <Script
         src="https://www.desmos.com/api/v1.8/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"
-        strategy="lazyOnload" // Load only when needed/visible? Or keep eager for faster graph load on click.
+        strategy="lazyOnload" // Load only when needed
         onLoad={() => {
             console.log("Desmos API script loaded.");
             setIsDesmosLoaded(true);
@@ -273,7 +453,7 @@ export default function MathPage() {
             console.error("Failed to load Desmos API script:", e);
              toast({
                 title: "Error Loading Graph",
-                description: "Could not load the Desmos graphing script.",
+                description: "Could not load the Desmos graphing script. Try refreshing.",
                 variant: "destructive",
                 duration: 9000,
             });
@@ -286,31 +466,40 @@ export default function MathPage() {
          </p>
 
          {/* Geometry Calculator Section */}
-         <Card>
+         <Card className="shadow-lg rounded-lg">
             <CardHeader>
-                 <CardTitle className="flex items-center gap-2">
-                    <Shapes className="h-6 w-6 text-primary" />
+                 <CardTitle className="flex items-center gap-2 text-primary">
+                    <Shapes className="h-6 w-6" />
                     Geometry Calculator
                  </CardTitle>
-                 <CardDescription>Calculate perimeter, area, surface area, and volume for various 2D and 3D shapes.</CardDescription>
+                 <CardDescription>Select a shape, enter its dimensions, and calculate its properties.</CardDescription>
             </CardHeader>
              <CardContent className="space-y-6">
                 <div className="space-y-2">
                     <Label htmlFor="shape-select">Select Shape</Label>
                     <Select onValueChange={handleShapeChange} value={selectedShape}>
-                        <SelectTrigger id="shape-select" className="w-full sm:w-[280px]">
+                        <SelectTrigger id="shape-select" className="w-full sm:w-[320px]">
                             <SelectValue placeholder="Choose a shape..." />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="square">Square (2D)</SelectItem>
-                            <SelectItem value="rectangle">Rectangle (2D)</SelectItem>
-                            <SelectItem value="circle">Circle (2D)</SelectItem>
-                             <SelectItem value="triangle">Triangle (Area) (2D)</SelectItem>
-                            <SelectItem value="cube">Cube (3D)</SelectItem>
-                            <SelectItem value="cuboid">Cuboid (3D)</SelectItem>
-                            <SelectItem value="sphere">Sphere (3D)</SelectItem>
-                            <SelectItem value="cylinder">Cylinder (3D)</SelectItem>
-                            <SelectItem value="cone">Cone (3D)</SelectItem>
+                             <SelectItem value="" disabled>--- 2D Shapes ---</SelectItem>
+                            <SelectItem value="square">Square</SelectItem>
+                            <SelectItem value="rectangle">Rectangle</SelectItem>
+                            <SelectItem value="triangle">Triangle</SelectItem>
+                            <SelectItem value="circle">Circle</SelectItem>
+                            <SelectItem value="parallelogram">Parallelogram</SelectItem>
+                            <SelectItem value="trapezium">Trapezium (Trapezoid)</SelectItem>
+                            <SelectItem value="rhombus">Rhombus</SelectItem>
+                            <SelectItem value="ellipse">Ellipse</SelectItem>
+                            <SelectItem value="" disabled>--- 3D Shapes ---</SelectItem>
+                            <SelectItem value="cube">Cube</SelectItem>
+                            <SelectItem value="cuboid">Cuboid</SelectItem>
+                            <SelectItem value="sphere">Sphere</SelectItem>
+                            <SelectItem value="cylinder">Cylinder</SelectItem>
+                            <SelectItem value="cone">Cone</SelectItem>
+                            <SelectItem value="hemisphere">Hemisphere</SelectItem>
+                            <SelectItem value="pyramid">Pyramid (Square Base)</SelectItem>
+                            <SelectItem value="frustum">Frustum of a Cone</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -318,7 +507,7 @@ export default function MathPage() {
                  {currentShapeConfig && (
                     <form onSubmit={handleGeometryCalculate} className="space-y-4">
                         <h3 className="text-lg font-medium">Inputs for {currentShapeConfig.label}</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                             {currentShapeConfig.inputs.map((input) => (
                                 <div key={input.name} className="space-y-1">
                                     <Label htmlFor={input.name}>{input.label} {input.unit ? `(${input.unit})` : ''}</Label>
@@ -326,13 +515,15 @@ export default function MathPage() {
                                         id={input.name}
                                         name={input.name}
                                         type="number"
-                                        step="any"
+                                        step="any" // Allow decimals
                                         value={geometryInputs[input.name] ?? ''}
                                         onChange={handleGeometryInputChange}
                                         placeholder={`Enter ${input.label.toLowerCase()}`}
-                                        required
-                                        min="0.000001" // Ensure positive value
+                                        // Make inputs required visually, but validation handles logic
+                                        // required
+                                        min="0.000001" // Default min, calculation logic handles <= 0 errors
                                         aria-label={`Input for ${input.label}`}
+                                        className="text-base sm:text-sm" // Adjust text size for consistency
                                     />
                                 </div>
                             ))}
@@ -346,22 +537,27 @@ export default function MathPage() {
                  {geometryError && (
                     <Alert variant="destructive">
                         <Calculator className="h-4 w-4" />
-                        <AlertTitle>Error</AlertTitle>
+                        <AlertTitle>Input Error</AlertTitle>
                         <AlertDescription>{geometryError}</AlertDescription>
                     </Alert>
                  )}
 
-                 {geometryResult && currentShapeConfig && (
-                     <Alert variant="success" className="bg-secondary"> {/* Use success variant */}
-                        <Calculator className="h-4 w-4" />
-                        <AlertTitle>Results for {currentShapeConfig.label}</AlertTitle>
+                 {currentResult && !geometryError && currentShapeConfig && (
+                     <Alert variant="success" className="bg-secondary dark:bg-muted/30">
+                        <Calculator className="h-4 w-4 text-primary" />
+                        <AlertTitle className="text-primary">Results for {currentShapeConfig.label}</AlertTitle>
                         <AlertDescription>
-                            <ul className="list-disc pl-5 space-y-1 mt-2">
-                                {geometryResult.perimeter !== undefined && <li>Perimeter/Circumference: {geometryResult.perimeter.toFixed(4)}</li>}
-                                {geometryResult.area !== undefined && <li>Area: {geometryResult.area.toFixed(4)}</li>}
-                                {geometryResult.surfaceArea !== undefined && <li>Surface Area: {geometryResult.surfaceArea.toFixed(4)}</li>}
-                                {geometryResult.volume !== undefined && <li>Volume: {geometryResult.volume.toFixed(4)}</li>}
+                            <ul className="list-disc pl-5 space-y-1 mt-2 text-sm">
+                                {currentResult.perimeter !== undefined && <li>Perimeter/Circumference: <code className="font-semibold">{currentResult.perimeter.toFixed(4)}</code></li>}
+                                {currentResult.area !== undefined && <li>Area: <code className="font-semibold">{currentResult.area.toFixed(4)}</code></li>}
+                                {currentResult.slantHeight !== undefined && <li>Slant Height (l): <code className="font-semibold">{currentResult.slantHeight.toFixed(4)}</code></li>}
+                                {currentResult.lateralSurfaceArea !== undefined && <li>Lateral Surface Area: <code className="font-semibold">{currentResult.lateralSurfaceArea.toFixed(4)}</code></li>}
+                                {currentResult.surfaceArea !== undefined && <li>Total Surface Area: <code className="font-semibold">{currentResult.surfaceArea.toFixed(4)}</code></li>}
+                                {currentResult.volume !== undefined && <li>Volume: <code className="font-semibold">{currentResult.volume.toFixed(4)}</code></li>}
                             </ul>
+                             {selectedShape === 'ellipse' && <p className="text-xs text-muted-foreground mt-2">Note: Ellipse circumference is an approximation.</p>}
+                             {selectedShape === 'triangle' && !currentResult.perimeter && <p className="text-xs text-muted-foreground mt-2">Note: Perimeter requires all 3 side lengths.</p>}
+                             {selectedShape === 'triangle' && !currentResult.area && <p className="text-xs text-muted-foreground mt-2">Note: Area requires either 3 sides (Heron's formula) or base and height.</p>}
                         </AlertDescription>
                     </Alert>
                  )}
@@ -370,14 +566,14 @@ export default function MathPage() {
 
 
         {/* Graphing Calculator Section */}
-        <Card>
+        <Card className="shadow-lg rounded-lg">
           <CardHeader>
             <div className="flex justify-between items-center">
-              <CardTitle className="flex items-center gap-2">
-                  <Calculator className="h-6 w-6 text-accent" /> {/* Changed icon */}
+              <CardTitle className="flex items-center gap-2 text-accent">
+                  <Calculator className="h-6 w-6" />
                  Interactive Graphing Calculator
               </CardTitle>
-              <Button onClick={toggleGraphVisibility} variant="outline">
+              <Button onClick={toggleGraphVisibility} variant="outline" className="bg-accent hover:bg-accent/90 text-accent-foreground">
                 {isGraphVisible ? 'Hide Graph' : 'Show Graph'}
               </Button>
             </div>
@@ -407,16 +603,16 @@ export default function MathPage() {
               {expressions.length > 0 && (
                 <div className="mb-4 space-y-2">
                     <h3 className="text-sm font-medium text-muted-foreground">Current Expressions:</h3>
-                    <ul className="list-none p-0 m-0 space-y-1 max-h-40 overflow-y-auto"> {/* Added scroll */}
+                    <ul className="list-none p-0 m-0 space-y-1 max-h-40 overflow-y-auto border rounded-md p-2 bg-muted/20"> {/* Added scroll, border, padding */}
                         {expressions.map((expr) => (
-                            <li key={expr.id} className="flex items-center justify-between bg-muted/50 dark:bg-muted/20 p-2 rounded-md text-sm">
-                                <span><code>{expr.latex}</code></span>
+                            <li key={expr.id} className="flex items-center justify-between bg-background dark:bg-muted/50 p-2 rounded-md text-sm shadow-sm">
+                                <code className="font-mono">{expr.latex}</code>
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => handleRemoveExpression(expr.id)}
                                     aria-label={`Remove expression ${expr.latex}`}
-                                    className="text-destructive hover:bg-destructive/10" // Destructive variant for remove
+                                    className="text-destructive hover:bg-destructive/10 px-2 py-1 h-auto" // Destructive variant for remove, adjusted padding/height
                                 >
                                     Remove
                                 </Button>
@@ -426,16 +622,18 @@ export default function MathPage() {
                 </div>
               )}
 
-              <div ref={calculatorRef} style={{ width: '100%', height: '500px' }} className="border rounded-md shadow-inner bg-background dark:bg-muted/10">
-                 {!isDesmosLoaded && <div className="flex items-center justify-center h-full text-muted-foreground">Loading Calculator...</div>}
-                 {isDesmosLoaded && !desmosInstanceRef.current && <div className="flex items-center justify-center h-full text-muted-foreground">Initializing Graph...</div>}
+              {/* Desmos Container */}
+              <div ref={calculatorRef} style={{ width: '100%', height: '500px' }} className="border rounded-md shadow-inner bg-background dark:bg-card">
+                 {!isDesmosLoaded && <div className="flex items-center justify-center h-full text-muted-foreground p-4">Loading Calculator Script...</div>}
+                 {isDesmosLoaded && !desmosInstanceRef.current && <div className="flex items-center justify-center h-full text-muted-foreground p-4">Initializing Graph...</div>}
+                 {/* Desmos will populate this div */}
               </div>
 
             </CardContent>
           )}
            {isGraphVisible && (
-              <CardFooter className="text-xs text-muted-foreground">
-                Examples: <code>y = sin(x)</code>, <code>f(x) = x^3 - x</code>, <code>r = cos(3θ)</code>. Use the keypad or type directly.
+              <CardFooter className="text-xs text-muted-foreground pt-4">
+                Graphing Examples: <code>y = sin(x)</code>, <code>f(x) = x^3 - x</code>, <code>r = cos(3θ)</code>. Use the keypad or type directly.
               </CardFooter>
            )}
         </Card>
