@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectLa
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Calculator, Shapes } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
 
 declare global {
   interface Window {
@@ -241,7 +242,7 @@ export default function MathPage() {
   const [expression, setExpression] = useState<string>('y = x^2');
   const [expressions, setExpressions] = useState<{ id: string; latex: string }[]>([]);
   const [isDesmosLoaded, setIsDesmosLoaded] = useState(false);
-  const [isGraphVisible, setIsGraphVisible] = useState(true); // Keep graph visible by default
+  const [isDesmosInitialized, setIsDesmosInitialized] = useState(false); // New state for initialization status
   const { toast } = useToast();
 
   // --- Geometry State ---
@@ -255,36 +256,31 @@ export default function MathPage() {
   // Effect to initialize Desmos when the script is loaded and the ref is available
   useEffect(() => {
     // Ensure this runs only on the client
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !isDesmosLoaded || !calculatorRef.current || desmosInstanceRef.current) {
+        return;
+    }
 
-    const initializeDesmos = () => {
-      if (isDesmosLoaded && calculatorRef.current && !desmosInstanceRef.current) {
-        try {
-          console.log("Initializing Desmos...");
-          desmosInstanceRef.current = window.Desmos.GraphingCalculator(calculatorRef.current, {
-            keypad: true,
-            expressions: true,
-            settingsMenu: true, // Enable settings menu for better usability
-          });
-          desmosInstanceRef.current.setBlank(); // Start with a blank graph
-          // Load initial/saved expressions if any
-          expressions.forEach(expr => desmosInstanceRef.current.setExpression({ id: expr.id, latex: expr.latex }));
-          console.log("Desmos Initialized Successfully.");
-        } catch (error) {
-          console.error("Failed to initialize Desmos:", error);
-          toast({
-            title: "Error",
-            description: "Failed to load the graphing calculator. Please refresh the page.",
-            variant: "destructive",
-          });
-        }
-      } else {
-         console.log("Desmos initialization prerequisites not met:", { isDesmosLoaded, calculatorRefCurrent: !!calculatorRef.current, desmosInstanceRefCurrent: !!desmosInstanceRef.current });
-      }
-    };
-
-    // Attempt initialization immediately if conditions are met
-    initializeDesmos();
+    console.log("Attempting to initialize Desmos...");
+    try {
+      desmosInstanceRef.current = window.Desmos.GraphingCalculator(calculatorRef.current, {
+        keypad: true,
+        expressions: true,
+        settingsMenu: true,
+      });
+      desmosInstanceRef.current.setBlank(); // Start with a blank graph
+      // Load initial/saved expressions if any
+      expressions.forEach(expr => desmosInstanceRef.current.setExpression({ id: expr.id, latex: expr.latex }));
+      setIsDesmosInitialized(true); // Set initialization flag
+      console.log("Desmos Initialized Successfully.");
+    } catch (error) {
+      console.error("Failed to initialize Desmos:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load the graphing calculator. Please refresh the page.",
+        variant: "destructive",
+      });
+      setIsDesmosInitialized(false); // Ensure state reflects failure
+    }
 
     // Cleanup function to destroy Desmos instance on component unmount
     return () => {
@@ -293,37 +289,51 @@ export default function MathPage() {
         try {
            desmosInstanceRef.current.destroy();
            desmosInstanceRef.current = null;
+           setIsDesmosInitialized(false); // Reset initialization state
         } catch (error) {
            console.error("Error destroying Desmos instance:", error);
         }
       }
     };
-  }, [isDesmosLoaded]); // Rerun only when isDesmosLoaded changes
+  // Rerun effect if script loads or container ref becomes available
+  }, [isDesmosLoaded, calculatorRef]); // Removed dependency on expressions here, handled separately
 
-  // Effect to handle expressions update
+  // Effect to handle expressions update (sync with Desmos instance)
   useEffect(() => {
-    if (desmosInstanceRef.current) {
-      // Clear existing expressions before setting new ones to avoid duplicates if necessary
-      // desmosInstanceRef.current.setBlank(); // Optional: Uncomment if you want to clear graph on expression list change outside add/remove
+    if (desmosInstanceRef.current && isDesmosInitialized) {
+      // Get current expressions from Desmos
+      const currentDesmosExprs = desmosInstanceRef.current.getExpressions().map((e: any) => e.id);
+      const stateExprsIds = expressions.map(expr => expr.id);
+
+      // Add expressions from state that are not in Desmos
       expressions.forEach(expr => {
-        try {
-           // Check if expression already exists before setting
-           const existingExpr = desmosInstanceRef.current.getExpressions().find((e: any) => e.id === expr.id);
-           if (!existingExpr) {
-              desmosInstanceRef.current.setExpression({ id: expr.id, latex: expr.latex });
-           }
-        } catch (error) {
-           console.error(`Error setting expression ${expr.id}:`, error);
+        if (!currentDesmosExprs.includes(expr.id)) {
+          try {
+            desmosInstanceRef.current.setExpression({ id: expr.id, latex: expr.latex });
+          } catch (error) {
+            console.error(`Error setting expression ${expr.id}:`, error);
+          }
+        }
+      });
+
+      // Remove expressions from Desmos that are no longer in state
+      currentDesmosExprs.forEach((desmosId: string) => {
+        if (!stateExprsIds.includes(desmosId)) {
+          try {
+            desmosInstanceRef.current.removeExpression({ id: desmosId });
+          } catch (error) {
+            console.error(`Error removing expression ${desmosId}:`, error);
+          }
         }
       });
     }
-  }, [expressions]); // Rerun when expressions array changes
+  }, [expressions, isDesmosInitialized]); // Rerun when expressions array or initialization status changes
 
 
   const handleAddExpression = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!desmosInstanceRef.current) {
-        toast({ title: "Error", description: "Calculator is not active. Please wait.", variant: "destructive" });
+    if (!isDesmosInitialized || !desmosInstanceRef.current) {
+        toast({ title: "Error", description: "Calculator is not ready. Please wait.", variant: "destructive" });
         return;
     }
      if (!expression.trim()) {
@@ -332,25 +342,29 @@ export default function MathPage() {
     }
     try {
         const newId = `expr-${Date.now()}`;
-        // Directly update state, useEffect will sync with Desmos
+        // Update state, useEffect will sync with Desmos
         setExpressions(prev => [...prev, { id: newId, latex: expression }]);
         setExpression(''); // Clear input after adding
     } catch (error) {
         console.error("Error adding expression:", error);
-        toast({ title: "Invalid Expression", description: "Please check the expression format (e.g., y = sin(x)).", variant: "destructive" });
+        // Attempt to let Desmos validate the expression to provide better feedback
+        try {
+           desmosInstanceRef.current.setExpression({id: 'temp-validation', latex: expression});
+           desmosInstanceRef.current.removeExpression({id: 'temp-validation'});
+        } catch(validationError: any) {
+            toast({ title: "Invalid Expression", description: validationError?.message || "Please check the expression format (e.g., y = sin(x)).", variant: "destructive" });
+            return; // Don't add if invalid
+        }
+         // If Desmos validation passes but still error somehow, show generic error
+        toast({ title: "Error", description: "Could not add expression.", variant: "destructive" });
     }
   };
 
    const handleRemoveExpression = (idToRemove: string) => {
-    if (!desmosInstanceRef.current) return;
-    try {
-        desmosInstanceRef.current.removeExpression({ id: idToRemove });
-        // Update state, useEffect will reflect this (though Desmos instance is already updated)
-        setExpressions(prev => prev.filter(expr => expr.id !== idToRemove));
-    } catch (error) {
-        console.error("Failed to remove expression:", error);
-        toast({ title: "Error", description: "Could not remove the expression.", variant: "destructive" });
-    }
+     // Update state first, useEffect will handle removal from Desmos instance
+     setExpressions(prev => prev.filter(expr => expr.id !== idToRemove));
+     // Optional: Show feedback immediately
+     toast({ title: "Expression Removed", description: "Expression removed from the graph." });
   };
 
 
@@ -365,7 +379,13 @@ export default function MathPage() {
       }
       const shape = value as Shape;
       setSelectedShape(shape);
-      setGeometryInputs({}); // Reset inputs when shape changes
+      // Reset inputs specific to the new shape
+      const config = shapeConfigs[shape];
+      const initialInputs = config.inputs.reduce((acc, input) => {
+          acc[input.name] = ''; // Initialize all inputs for the new shape as empty
+          return acc;
+        }, {} as Record<string, string>);
+      setGeometryInputs(initialInputs);
       setGeometryResult(null);
       setGeometryError(null);
   };
@@ -438,9 +458,12 @@ export default function MathPage() {
                  if (selectedShape === 'trapezium' && inputField.name === 'h' && (value === undefined || value.trim() === '')) {
                       // If trying to calculate only perimeter, h is not strictly needed
                       if(!(geometryInputs['b1'] && geometryInputs['b2'] && geometryInputs['s1'] && geometryInputs['s2'])) {
-                           setGeometryError(`Missing required input for area calculation: ${inputField.label}.`);
-                           missingRequiredInput = true;
-                           break;
+                           // Only error if area *could* have been calculated but h is missing
+                           if (geometryInputs['b1'] && geometryInputs['b2']) {
+                             setGeometryError(`Missing height (h) required for area calculation.`);
+                             missingRequiredInput = true;
+                             break;
+                           }
                       }
                  } else if (isRequired && (value === undefined || value.trim() === '')) {
                     setGeometryError(`Missing required input: ${inputField.label}.`);
@@ -510,8 +533,9 @@ export default function MathPage() {
   return (
     <>
       <Script
+        id="desmos-api-script" // Add an ID for clarity
         src="https://www.desmos.com/api/v1.8/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"
-        strategy="lazyOnload" // Keep lazyOnload
+        strategy="lazyOnload"
         onLoad={() => {
             console.log("Desmos API script loaded successfully.");
             setIsDesmosLoaded(true);
@@ -525,6 +549,7 @@ export default function MathPage() {
                 variant: "destructive",
                 duration: 9000,
             });
+             setIsDesmosLoaded(false); // Ensure state reflects failure
         }}
       />
       <div className="space-y-12">
@@ -648,13 +673,10 @@ export default function MathPage() {
         {/* Graphing Calculator Section */}
         <Card className="shadow-lg rounded-lg">
           <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle className="flex items-center gap-2 text-accent">
-                  <Calculator className="h-6 w-6" />
-                 Interactive Graphing Calculator
-              </CardTitle>
-              {/* Removed the Hide/Show Graph button */}
-            </div>
+            <CardTitle className="flex items-center gap-2 text-accent">
+                <Calculator className="h-6 w-6" />
+               Interactive Graphing Calculator
+            </CardTitle>
             <CardDescription>
                 Powered by Desmos API. Enter functions below and see them plotted.
             </CardDescription>
@@ -669,8 +691,13 @@ export default function MathPage() {
                     placeholder="e.g., y = x^2 + 1, r = cos(3θ)"
                     className="flex-grow"
                     aria-label="Enter mathematical function"
+                    disabled={!isDesmosInitialized} // Disable input if not initialized
                  />
-                 <Button type="submit" className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                 <Button
+                   type="submit"
+                   className="bg-accent hover:bg-accent/90 text-accent-foreground"
+                   disabled={!isDesmosInitialized} // Disable button if not initialized
+                 >
                    Add Graph
                  </Button>
               </form>
@@ -688,6 +715,7 @@ export default function MathPage() {
                                     onClick={() => handleRemoveExpression(expr.id)}
                                     aria-label={`Remove expression ${expr.latex}`}
                                     className="text-destructive hover:bg-destructive/10 px-2 py-1 h-auto"
+                                    disabled={!isDesmosInitialized} // Disable remove if not initialized
                                 >
                                     Remove
                                 </Button>
@@ -697,12 +725,36 @@ export default function MathPage() {
                 </div>
               )}
 
-              {/* Desmos Container */}
-              {/* Added key to potentially help React re-render if necessary, though ref should handle it */}
-              <div ref={calculatorRef} key="desmos-graph" style={{ width: '100%', height: '500px' }} className="border rounded-md shadow-inner bg-background dark:bg-card">
-                 {!isDesmosLoaded && <div className="flex items-center justify-center h-full text-muted-foreground p-4">Loading Calculator Script...</div>}
-                 {isDesmosLoaded && !desmosInstanceRef.current && <div className="flex items-center justify-center h-full text-muted-foreground p-4">Initializing Graph... Please wait.</div>}
-                 {/* Desmos will populate this div when initialized */}
+              {/* Desmos Container with Loading/Error States */}
+              <div
+                id="desmos-calculator-container" // Added ID for potential debugging
+                ref={calculatorRef}
+                style={{ width: '100%', height: '500px', position: 'relative' }} // Ensure relative positioning for overlay
+                className="border rounded-md shadow-inner bg-background dark:bg-card overflow-hidden" // Added overflow-hidden
+              >
+                {/* Loading/Error Overlay */}
+                {!isDesmosInitialized && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/80 dark:bg-card/80 z-10">
+                    <div className="text-center p-4">
+                      {!isDesmosLoaded ? (
+                        <>
+                          <Skeleton className="h-8 w-48 mx-auto mb-2" />
+                          <p className="text-muted-foreground">Loading Calculator Script...</p>
+                        </>
+                      ) : (
+                        <>
+                          <Skeleton className="h-8 w-48 mx-auto mb-2" />
+                          <p className="text-muted-foreground">Initializing Graph... Please wait.</p>
+                        </>
+                      )}
+                       {/* Show error message if script failed to load */}
+                       {!isDesmosLoaded && isDesmosLoaded !== undefined && ( // Check if load attempt failed
+                           <p className="text-destructive text-sm mt-2">Failed to load script. Please refresh.</p>
+                       )}
+                    </div>
+                  </div>
+                )}
+                 {/* The actual Desmos graph will render here, under the overlay if not initialized */}
               </div>
 
             </CardContent>
@@ -716,5 +768,3 @@ export default function MathPage() {
     </>
   );
 }
-
-    
