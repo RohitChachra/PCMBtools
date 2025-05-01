@@ -244,7 +244,7 @@ export default function MathPage() {
   const [expression, setExpression] = useState<string>('y = x^2');
   const [expressions, setExpressions] = useState<{ id: string; latex: string }[]>([]);
   const [isDesmosLoaded, setIsDesmosLoaded] = useState(false);
-  const [isGraphVisible, setIsGraphVisible] = useState(false); // State to control graph visibility
+  const [isGraphVisible, setIsGraphVisible] = useState(true); // State to control graph visibility, default to true
   const { toast } = useToast();
 
   // --- Geometry State ---
@@ -255,6 +255,7 @@ export default function MathPage() {
 
   // --- Desmos Logic ---
   useEffect(() => {
+    // Initialize Desmos immediately if the graph is visible and the script is loaded
     if (isGraphVisible && isDesmosLoaded && calculatorRef.current && !desmosInstanceRef.current) {
       try {
         desmosInstanceRef.current = window.Desmos.GraphingCalculator(calculatorRef.current, {
@@ -263,6 +264,7 @@ export default function MathPage() {
            settingsMenu: true, // Enable settings menu for better usability
         });
         desmosInstanceRef.current.setBlank(); // Start with a blank graph
+        // Load initial/saved expressions if any
         expressions.forEach(expr => desmosInstanceRef.current.setExpression({ id: expr.id, latex: expr.latex }));
       } catch (error) {
         console.error("Failed to initialize Desmos:", error);
@@ -273,13 +275,12 @@ export default function MathPage() {
         });
       }
     }
-    // No cleanup needed just for visibility toggle, only on component unmount if necessary
-  }, [isGraphVisible, isDesmosLoaded, toast, expressions]);
+  }, [isGraphVisible, isDesmosLoaded, toast, expressions]); // Dependency on isGraphVisible to re-init if it becomes visible later (though it defaults to true now)
 
 
   const handleAddExpression = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isGraphVisible || !desmosInstanceRef.current) {
+    if (!desmosInstanceRef.current) {
         toast({ title: "Error", description: "Calculator is not active.", variant: "destructive" });
         return;
     }
@@ -299,7 +300,7 @@ export default function MathPage() {
   };
 
    const handleRemoveExpression = (idToRemove: string) => {
-    if (!isGraphVisible || !desmosInstanceRef.current) return;
+    if (!desmosInstanceRef.current) return;
     try {
         desmosInstanceRef.current.removeExpression({ id: idToRemove });
         setExpressions(prev => prev.filter(expr => expr.id !== idToRemove));
@@ -309,12 +310,7 @@ export default function MathPage() {
     }
   };
 
-  const toggleGraphVisibility = () => {
-    setIsGraphVisible(prev => !prev);
-     // Load Desmos script when 'Show Graph' is clicked for the first time
-     // This requires the <Script> tag strategy to be `lazyOnload` or similar deferred loading.
-     // If strategy="afterInteractive" (default or similar), it might load earlier.
-  };
+  // Removed toggleGraphVisibility function as it's no longer needed
 
   // --- Geometry Logic ---
   const handleShapeChange = (value: string) => {
@@ -464,10 +460,11 @@ export default function MathPage() {
     <>
       <Script
         src="https://www.desmos.com/api/v1.8/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"
-        strategy="lazyOnload" // Load only when needed
+        strategy="lazyOnload" // Keep lazyOnload or adjust if needed
         onLoad={() => {
             console.log("Desmos API script loaded.");
             setIsDesmosLoaded(true);
+            // Now that it's loaded, useEffect will handle initialization if isGraphVisible is true
         }}
         onError={(e) => {
             console.error("Failed to load Desmos API script:", e);
@@ -602,18 +599,13 @@ export default function MathPage() {
                   <Calculator className="h-6 w-6" />
                  Interactive Graphing Calculator
               </CardTitle>
-              <Button onClick={toggleGraphVisibility} variant="outline" className="bg-accent hover:bg-accent/90 text-accent-foreground">
-                {isGraphVisible ? 'Hide Graph' : 'Show Graph'}
-              </Button>
+              {/* Removed the Hide/Show Graph button */}
             </div>
             <CardDescription>
-              {isGraphVisible
-                ? "Powered by Desmos API. Enter functions below and see them plotted."
-                : "Click 'Show Graph' to load the interactive graphing calculator."}
+                Powered by Desmos API. Enter functions below and see them plotted.
             </CardDescription>
           </CardHeader>
 
-          {isGraphVisible && (
             <CardContent>
               <form onSubmit={handleAddExpression} className="flex flex-col sm:flex-row gap-2 mb-4">
                  <Input
@@ -659,12 +651,9 @@ export default function MathPage() {
               </div>
 
             </CardContent>
-          )}
-           {isGraphVisible && (
-              <CardFooter className="text-xs text-muted-foreground pt-4">
+            <CardFooter className="text-xs text-muted-foreground pt-4">
                 Graphing Examples: <code>y = sin(x)</code>, <code>f(x) = x^3 - x</code>, <code>r = cos(3θ)</code>. Use the keypad or type directly.
-              </CardFooter>
-           )}
+            </CardFooter>
         </Card>
 
 
