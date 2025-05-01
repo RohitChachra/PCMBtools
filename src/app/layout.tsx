@@ -39,6 +39,7 @@ export default function RootLayout({
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
+          suppressHydrationWarning // Add here as well
         >
           <Header />
           <main className="flex-grow container py-8">{children}</main>
@@ -49,3 +50,4 @@ export default function RootLayout({
     </html>
   );
 }
+
