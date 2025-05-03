@@ -1,4 +1,6 @@
 
+'use client'; // Add 'use client' directive
+
 import Link from 'next/link';
 import { BookOpenText, FlaskConical, Atom, Sigma, Shapes, Calculator } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -104,7 +106,8 @@ export function Header() {
                   </>
                 ) : (
                   <Link href={item.href} legacyBehavior passHref>
-                    <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "text-sm font-medium text-muted-foreground transition-colors hover:text-primary")}>
+                    {/* Apply only the base trigger styles */}
+                    <NavigationMenuLink className={navigationMenuTriggerStyle()}>
                        <item.trigger.icon className="h-4 w-4 mr-1" />
                        {item.trigger.label}
                     </NavigationMenuLink>
@@ -156,7 +159,7 @@ export function Header() {
                                className="flex items-center gap-2 rounded-md p-2 text-base font-medium text-muted-foreground hover:bg-accent/80 hover:text-accent-foreground"
 
                               >
-                                <subItem.icon className="h-4 w-4" />
+                                {subItem.icon && <subItem.icon className="h-4 w-4" /> /* Conditionally render icon */}
                                 {subItem.title}
                               </Link>
                            ))}
@@ -172,3 +175,4 @@ export function Header() {
     </header>
   );
 }
+
