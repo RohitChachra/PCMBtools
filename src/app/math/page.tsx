@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Shapes, Calculator } from 'lucide-react';
+import { Shapes, Calculator as CalculatorIcon, Sigma } from 'lucide-react'; // Added Sigma for Scientific Calc
 
 export default function MathPage() {
   const mathTools = [
@@ -16,7 +16,13 @@ export default function MathPage() {
       title: 'Graphing Calculator',
       description: 'Visualize mathematical functions and equations interactively using Desmos.',
       href: '/math/graphing',
-      icon: Calculator,
+      icon: CalculatorIcon, // Renamed import
+    },
+    { // New Entry for Scientific Calculator
+      title: 'Scientific Calculator',
+      description: 'Perform basic and advanced scientific calculations.',
+      href: '/math/scientific-calculator',
+      icon: Sigma, // Use Sigma or another suitable icon
     },
   ];
 
@@ -25,11 +31,12 @@ export default function MathPage() {
       <section className="text-center space-y-4">
         <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Mathematics Tools</h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Explore interactive calculators for geometry and function graphing.
+          Explore interactive calculators for geometry, function graphing, and scientific calculations.
         </p>
       </section>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+      {/* Updated grid to accommodate 3 items potentially better */}
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
         {mathTools.map((tool) => (
           <Card key={tool.title} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
             <CardHeader className="items-center text-center p-6">

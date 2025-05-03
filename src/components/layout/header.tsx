@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { BookOpenText, FlaskConical, Atom, Sigma, Shapes, Calculator } from 'lucide-react';
+import { BookOpenText, FlaskConical, Atom, Sigma, Shapes, Calculator as CalculatorIcon } from 'lucide-react'; // Renamed Calculator to CalculatorIcon
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet"; // Added SheetTitle, SheetDescription
 import { Menu } from 'lucide-react';
@@ -14,7 +14,7 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
-  navigationMenuTriggerStyle, // Keep the import
+  // navigationMenuTriggerStyle, // Keep the import but commented out direct usage below
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
 import * as React from 'react'; // Import React
@@ -24,9 +24,9 @@ const navItems = [
     trigger: { label: 'Mathematics', icon: Sigma },
     href: '/math',
     subItems: [
-
       { href: '/math/geometry', title: 'Geometry Calculator', description: 'Calculate properties of 2D/3D shapes.', icon: Shapes },
-      { href: '/math/graphing', title: 'Graphing Calculator', description: 'Visualize functions interactively.', icon: Calculator },
+      { href: '/math/graphing', title: 'Graphing Calculator', description: 'Visualize functions interactively.', icon: CalculatorIcon },
+      { href: '/math/scientific-calculator', title: 'Scientific Calculator', description: 'Perform complex calculations.', icon: Sigma }, // Added Scientific Calculator
     ],
   },
   {
@@ -87,14 +87,15 @@ export function Header() {
                   <>
                     {/* Link wraps the trigger for click navigation */}
                     <Link href={item.href} legacyBehavior passHref>
-                     <NavigationMenuTrigger>
+                     <NavigationMenuTrigger className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
                         <item.trigger.icon className="h-4 w-4 mr-1" />
                         {item.trigger.label}
                       </NavigationMenuTrigger>
                     </Link>
                     {/* Dropdown content appears on hover */}
                     <NavigationMenuContent>
-                      <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
+                       {/* Adjusted width for potential 3 items */}
+                       <ul className="grid w-[450px] gap-3 p-4 md:w-[550px] lg:w-[650px] lg:grid-cols-3">
                         {item.subItems.map((subItem) => (
                           <ListItem
                             key={subItem.title}
