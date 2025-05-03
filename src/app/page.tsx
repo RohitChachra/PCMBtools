@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,7 +37,7 @@ export default function Home() {
     <div className="flex flex-col items-center text-center space-y-12">
       <section className="space-y-4 max-w-3xl">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tighter text-primary">
-          Welcome to SciVerse
+          Welcome to PCMBtools
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground">
           Explore the wonders of Math, Chemistry, and Physics — all in one place. Dive into interactive graphs, molecular structures, and scientific calculators.

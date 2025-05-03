@@ -16,7 +16,7 @@ const geistMonoVariable = GeistMono.variable;
 
 
 export const metadata: Metadata = {
-  title: 'SciVerse - Explore Math, Chemistry & Physics',
+  title: 'PCMBtools - Explore Math, Chemistry & Physics',
   description: 'Interactive educational platform for Math, Chemistry, and Physics.',
 };
 

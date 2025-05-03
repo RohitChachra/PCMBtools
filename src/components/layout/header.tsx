@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import { BookOpenText, FlaskConical, Atom, Sigma } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ export function Header() {
       <div className="container flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
           <BookOpenText className="h-6 w-6 text-primary" />
-          <span className="text-lg font-bold">SciVerse</span>
+          <span className="text-lg font-bold">PCMBtools</span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -48,7 +49,7 @@ export function Header() {
               <div className="grid gap-4 py-6">
                 <Link href="/" className="flex items-center gap-2 mb-4">
                   <BookOpenText className="h-6 w-6 text-primary" />
-                  <span className="text-lg font-bold">SciVerse</span>
+                  <span className="text-lg font-bold">PCMBtools</span>
                 </Link>
                 {navItems.map((item) => (
                   <Link
