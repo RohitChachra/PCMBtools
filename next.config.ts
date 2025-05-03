@@ -1,3 +1,4 @@
+
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
@@ -28,8 +29,15 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      { // Added entry for Wikimedia Commons images
+        protocol: 'https',
+        hostname: 'upload.wikimedia.org',
+        port: '',
+        pathname: '/wikipedia/commons/**', // Allow images from Wikimedia Commons subpaths
+      }
     ],
   },
 };
 
 export default nextConfig;
+
