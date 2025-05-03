@@ -26,10 +26,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    // Ensure html and body take full height
+    <html lang="en" suppressHydrationWarning className="h-full">
       <body
         className={cn(
-          "min-h-screen flex flex-col font-sans antialiased", // Use min-h-screen instead of h-full on body
+          "min-h-screen flex flex-col font-sans antialiased", // Use min-h-screen on body
           geistSansVariable, // Use the variable assigned above
           geistMonoVariable  // Use the variable assigned above
         )}
@@ -41,7 +42,8 @@ export default function RootLayout({
           disableTransitionOnChange // Add here as well
         >
           <Header />
-          <main className="flex-grow container py-8">{children}</main>
+          {/* Added explicit horizontal padding px-4 sm:px-6 lg:px-8 */}
+          <main className="flex-grow container py-8 px-4 sm:px-6 lg:px-8">{children}</main>
           <Footer />
           <Toaster />
         </ThemeProvider>
