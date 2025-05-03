@@ -1,3 +1,4 @@
+
 import { CalculatorCard } from './calculator-card';
 
 export function DynamicsCalculators() {
@@ -8,8 +9,8 @@ export function DynamicsCalculators() {
         title="Force (Newton's Second Law)"
         description="Calculate the net force (F) acting on an object."
         inputFields={[
-          { name: 'm', label: 'Mass (m)', unit: 'kg' },
-          { name: 'a', label: 'Acceleration (a)', unit: 'm/s²' },
+          { name: 'm', label: 'Mass (m)', unit: 'kg' }, // Mass cannot be negative
+          { name: 'a', label: 'Acceleration (a)', unit: 'm/s²', allowNegative: true }, // Acceleration can be negative
         ]}
         formula="F = ma"
         calculate={({ m, a }) => m * a}
@@ -22,9 +23,9 @@ export function DynamicsCalculators() {
         title="Acceleration"
         description="Calculate acceleration (a) from velocity change over time."
         inputFields={[
-          { name: 'v', label: 'Final Velocity (v)', unit: 'm/s' },
-          { name: 'u', label: 'Initial Velocity (u)', unit: 'm/s' },
-          { name: 't', label: 'Time (t)', unit: 's' },
+          { name: 'v', label: 'Final Velocity (v)', unit: 'm/s', allowNegative: true }, // Velocity can be negative
+          { name: 'u', label: 'Initial Velocity (u)', unit: 'm/s', allowNegative: true }, // Velocity can be negative
+          { name: 't', label: 'Time (t)', unit: 's' }, // Time cannot be negative
         ]}
         formula="a = (v - u) / t"
         calculate={({ v, u, t }) => {
@@ -44,8 +45,8 @@ export function DynamicsCalculators() {
         title="Momentum"
         description="Calculate the momentum (p) of an object."
         inputFields={[
-          { name: 'm', label: 'Mass (m)', unit: 'kg' },
-          { name: 'v', label: 'Velocity (v)', unit: 'm/s' },
+          { name: 'm', label: 'Mass (m)', unit: 'kg' }, // Mass cannot be negative
+          { name: 'v', label: 'Velocity (v)', unit: 'm/s', allowNegative: true }, // Velocity can be negative
         ]}
         formula="p = mv"
         calculate={({ m, v }) => m * v}

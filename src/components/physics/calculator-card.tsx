@@ -12,6 +12,7 @@ interface InputField {
   label: string;
   unit: string;
   defaultValue?: string;
+  allowNegative?: boolean; // Add flag to allow negative inputs explicitly
 }
 
 interface CalculatorCardProps {
@@ -61,12 +62,28 @@ export function CalculatorCard({
 
     for (const field of inputFields) {
       const value = inputValues[field.name];
-      if (value === '' || isNaN(parseFloat(value))) {
+      if (value === '') {
+          setError(`Missing input for ${field.label}. Please enter a value.`);
+          validationError = true;
+          break;
+      }
+      const numValue = parseFloat(value);
+      if (isNaN(numValue)) {
         setError(`Invalid input for ${field.label}. Please enter a valid number.`);
         validationError = true;
         break;
       }
-      numericInputs[field.name] = parseFloat(value);
+
+      // Check for negative values where inappropriate (e.g., time, mass)
+      // Allow negative values only if explicitly permitted by the field config
+      const isNegativeRestricted = ['t', 'm', 'm1', 'm2', 'M'].includes(field.name) || field.label.toLowerCase().includes('time') || field.label.toLowerCase().includes('mass') || field.label.toLowerCase().includes('length') || field.label.toLowerCase().includes('distance') || field.label.toLowerCase().includes('radius');
+      if (isNegativeRestricted && !field.allowNegative && numValue < 0) {
+          setError(`Invalid input for ${field.label}. Value cannot be negative.`);
+          validationError = true;
+          break;
+      }
+
+      numericInputs[field.name] = numValue;
     }
 
     if (validationError) {
@@ -76,12 +93,17 @@ export function CalculatorCard({
     try {
       const calculationResult = calculate(numericInputs);
       if (calculationResult === null || (typeof calculationResult === 'number' && isNaN(calculationResult))) {
-          setError("Calculation resulted in an invalid value (e.g., division by zero). Please check your inputs.");
+          setError("Calculation resulted in an invalid value (e.g., division by zero or inconsistent inputs). Please check your inputs.");
       } else if (typeof calculationResult === 'number') {
-          // Format number to a reasonable number of decimal places
-          setResult(calculationResult.toFixed(4));
+          // Check if result represents time or mass and is negative
+          const resultIsNegativeRestricted = resultLabel.toLowerCase().includes('time') || resultLabel.toLowerCase().includes('mass');
+          if (resultIsNegativeRestricted && calculationResult < 0) {
+              setError(`Calculation resulted in a negative ${resultLabel.toLowerCase()}, which is invalid.`);
+          } else {
+            setResult(calculationResult.toFixed(4));
+          }
       } else {
-           setResult(calculationResult); // Allow string results (e.g., for efficiency)
+           setResult(calculationResult); // Allow string results (e.g., for efficiency or specific messages)
       }
     } catch (err: any) {
       console.error('Calculation error:', err);
@@ -119,6 +141,7 @@ export function CalculatorCard({
                     onChange={handleInputChange}
                     placeholder={`Enter ${field.label.toLowerCase()}`}
                     required
+                    min={!field.allowNegative && (['t', 'm', 'm1', 'm2', 'M'].includes(field.name) || field.label.toLowerCase().includes('time') || field.label.toLowerCase().includes('mass')) ? "0" : undefined} // Set min="0" for non-negative fields
                     className="flex-grow"
                   />
                    <span className="text-sm text-muted-foreground whitespace-nowrap">{field.unit}</span>
@@ -140,7 +163,7 @@ export function CalculatorCard({
             </Alert>
           )}
 
-          {result !== null && (
+          {result !== null && !error && ( // Only show result if there is no error
             <Alert className="w-full bg-secondary">
                 <Terminal className="h-4 w-4" />
                 <AlertTitle>{resultLabel}</AlertTitle>
