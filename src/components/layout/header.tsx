@@ -85,10 +85,14 @@ export function Header() {
               <NavigationMenuItem key={item.trigger.label}>
                 {item.subItems ? (
                   <>
-                    <NavigationMenuTrigger className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary data-[state=open]:text-primary">
-                      <item.trigger.icon className="h-4 w-4 mr-1" />
-                      {item.trigger.label}
-                    </NavigationMenuTrigger>
+                    {/* Wrap Trigger in Link for direct navigation on click */}
+                    <Link href={item.href} legacyBehavior passHref>
+                      <NavigationMenuTrigger className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary data-[state=open]:text-primary">
+                        <item.trigger.icon className="h-4 w-4 mr-1" />
+                        {item.trigger.label}
+                      </NavigationMenuTrigger>
+                    </Link>
+                    {/* Dropdown content appears on hover */}
                     <NavigationMenuContent>
                       <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
                         {item.subItems.map((subItem) => (
@@ -105,8 +109,8 @@ export function Header() {
                     </NavigationMenuContent>
                   </>
                 ) : (
+                  // Items without submenus just navigate directly
                   <Link href={item.href} legacyBehavior passHref>
-                    {/* Apply only the base trigger styles */}
                     <NavigationMenuLink className={navigationMenuTriggerStyle()}>
                        <item.trigger.icon className="h-4 w-4 mr-1" />
                        {item.trigger.label}
