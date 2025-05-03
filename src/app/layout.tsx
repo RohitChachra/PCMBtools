@@ -27,10 +27,10 @@ export default function RootLayout({
 }>) {
   return (
     // Ensure html and body take full height
-    <html lang="en" suppressHydrationWarning className="h-full">
+    <html lang="en" suppressHydrationWarning> {/* Removed h-full, added suppressHydrationWarning */}
       <body
         className={cn(
-          "min-h-screen flex flex-col font-sans antialiased", // Use min-h-screen on body
+          "min-h-screen flex flex-col font-sans antialiased", // Use min-h-screen on body, removed h-full
           geistSansVariable, // Use the variable assigned above
           geistMonoVariable  // Use the variable assigned above
         )}
@@ -42,8 +42,8 @@ export default function RootLayout({
           disableTransitionOnChange // Add here as well
         >
           <Header />
-          {/* Added explicit horizontal padding px-4 sm:px-6 lg:px-8 */}
-          <main className="flex-grow container py-8 px-4 sm:px-6 lg:px-8">{children}</main>
+          {/* Adjusted horizontal padding to increase margins: px-6 sm:px-10 lg:px-16 */}
+          <main className="flex-grow container py-8 px-6 sm:px-10 lg:px-16">{children}</main>
           <Footer />
           <Toaster />
         </ThemeProvider>
