@@ -13,7 +13,7 @@ export function ThermodynamicsCalculators() {
         inputFields={[
           { name: 'm', label: 'Mass (m)', unit: 'kg' },
           { name: 'c', label: 'Specific Heat Capacity (c)', unit: 'J/(kg·K)' },
-          { name: 'deltaT', label: 'Temperature Change (ΔT)', unit: 'K or °C' },
+          { name: 'deltaT', label: 'Temperature Change (ΔT)', unit: 'K or °C', allowNegative: true }, // Temp change can be negative
         ]}
         formula="Q = mcΔT"
         calculate={({ m, c, deltaT }) => m * c * deltaT}
@@ -21,7 +21,7 @@ export function ThermodynamicsCalculators() {
         resultUnit="J"
         children={
              <p className="text-xs text-muted-foreground mt-2">
-               Ensure specific heat capacity units match mass and temperature units. ΔT can be in Kelvin or Celsius as it's a change.
+               Ensure specific heat capacity units match mass and temperature units. ΔT can be in Kelvin or Celsius as it's a change. Heat transferred (Q) can be negative if temperature decreases.
              </p>
          }
       />
@@ -32,20 +32,21 @@ export function ThermodynamicsCalculators() {
         description="Calculate the pressure (P) of an ideal gas."
         inputFields={[
           { name: 'n', label: 'Amount of Substance (n)', unit: 'mol' },
-          { name: 'T', label: 'Absolute Temperature (T)', unit: 'K' },
+          { name: 'T', label: 'Absolute Temperature (T)', unit: 'K' }, // Absolute Temp must be non-negative
           { name: 'V', label: 'Volume (V)', unit: 'm³' },
         ]}
         formula="PV = nRT  =&gt;  P = nRT / V" // Use HTML entity for '>' if needed, though should be fine in code block
         calculate={({ n, T, V }) => {
-          if (V === 0) return null; // Avoid division by zero
-          if (T < 0) return null; // Temperature must be absolute (Kelvin)
+          if (V <= 0) return "Volume must be positive.";
+          if (T < 0) return "Absolute temperature (T) must be non-negative (Kelvin).";
+          if (n < 0) return "Amount of substance (n) cannot be negative.";
           return (n * R * T) / V;
         }}
         resultLabel="Pressure (P)"
         resultUnit="Pa"
          children={
              <p className="text-xs text-muted-foreground mt-2">
-               Uses R ≈ 8.314 J K⁻¹ mol⁻¹. Ensure temperature is in Kelvin (K = °C + 273.15) and volume in cubic meters.
+               Uses R ≈ 8.314 J K⁻¹ mol⁻¹. Ensure temperature is in Kelvin (K = °C + 273.15) and volume in cubic meters. Inputs must be non-negative, except volume must be positive.
              </p>
          }
       />
@@ -55,23 +56,23 @@ export function ThermodynamicsCalculators() {
         title="Thermal Efficiency"
         description="Calculate the efficiency (η) of a heat engine."
         inputFields={[
-          { name: 'W', label: 'Work Output (W)', unit: 'J' },
+          { name: 'W', label: 'Work Output (W)', unit: 'J' }, // Work output typically positive
           // Use HTML entity or keep sub tag for dangerouslySetInnerHTML
-          { name: 'QH', label: 'Heat Input (Q<sub class="text-[0.6em] align-baseline">H</sub>)', unit: 'J' },
+          { name: 'QH', label: 'Heat Input (Q<sub>H</sub>)', unit: 'J' }, // Heat input must be positive
         ]}
         // Ensure the formula string uses standard HTML <sub> tags
         formula="η = (W / Q<sub>H</sub>) * 100"
         calculate={({ W, QH }) => {
-          if (QH === 0) return null; // Avoid division by zero
-          if (W < 0 || QH < 0) return null; // Work and Heat Input should be positive for standard efficiency calc
-          if (W > QH) return null; // Work output cannot exceed heat input
+          if (QH <= 0) return "Heat Input (QH) must be positive."; // Avoid division by zero and non-physical input
+          if (W < 0) return "Work Output (W) should typically be non-negative for efficiency calculation."; // Efficiency usually assumes positive work
+          if (W > QH) return "Work output cannot exceed heat input (violates thermodynamics).";
           return (W / QH) * 100;
         }}
         resultLabel="Efficiency (η)"
         resultUnit="%"
          children={
              <p className="text-xs text-muted-foreground mt-2">
-                Efficiency is expressed as a percentage. Ensure Work Output and Heat Input have the same units.
+                Efficiency is expressed as a percentage. Ensure Work Output and Heat Input have the same units and are non-negative, with Heat Input being positive.
              </p>
          }
       />

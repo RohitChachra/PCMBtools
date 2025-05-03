@@ -12,7 +12,7 @@ interface InputField {
   label: string;
   unit: string;
   defaultValue?: string;
-  allowNegative?: boolean; // Add flag to allow negative inputs explicitly
+  allowNegative?: boolean; // Flag to allow negative inputs explicitly
 }
 
 interface CalculatorCardProps {
@@ -20,7 +20,7 @@ interface CalculatorCardProps {
   description: string;
   inputFields: InputField[];
   formula: string; // e.g., "v = u + at" or "η = (W / Q<sub>H</sub>) * 100"
-  calculate: (inputs: Record<string, number>) => number | string | null; // Can return null for errors
+  calculate: (inputs: Record<string, number>) => number | string | null; // Can return string for specific error messages, null for general errors
   resultLabel: string;
   resultUnit: string;
   children?: ReactNode; // For optional additional content or explanations
@@ -74,10 +74,24 @@ export function CalculatorCard({
         break;
       }
 
-      // Check for negative values where inappropriate (e.g., time, mass)
-      // Allow negative values only if explicitly permitted by the field config
-      const isNegativeRestricted = ['t', 'm', 'm1', 'm2', 'M'].includes(field.name) || field.label.toLowerCase().includes('time') || field.label.toLowerCase().includes('mass') || field.label.toLowerCase().includes('length') || field.label.toLowerCase().includes('distance') || field.label.toLowerCase().includes('radius');
-      if (isNegativeRestricted && !field.allowNegative && numValue < 0) {
+      // Check for negative inputs where inappropriate (unless explicitly allowed)
+      // Example: time, mass, length, distance, radius, frequency, wavelength, absolute temp (K)
+      // Allow charge (q), voltage (V), current (I), force (F), velocity (v, u), acceleration (a),
+      // angle (theta), angular velocity (omega), work (W), height (h relative to ref), heat capacity (c), temp change (deltaT)
+      const isNegativeRestricted = !field.allowNegative && (
+          field.label.toLowerCase().includes('time') ||
+          field.label.toLowerCase().includes('mass') ||
+          field.label.toLowerCase().includes('length') ||
+          field.label.toLowerCase().includes('distance') ||
+          field.label.toLowerCase().includes('radius') ||
+          field.label.toLowerCase().includes('frequency') ||
+          field.label.toLowerCase().includes('wavelength') ||
+          field.label.toLowerCase() === 'absolute temperature (t)' || // Specific check for absolute temp
+          field.label.toLowerCase() === 'heat input (q<sub class="text-[0.6em] align-baseline">h</sub>)' ||
+          field.label.toLowerCase().includes('resistance') // Resistance usually positive
+      );
+
+      if (isNegativeRestricted && numValue < 0) {
           setError(`Invalid input for ${field.label}. Value cannot be negative.`);
           validationError = true;
           break;
@@ -92,18 +106,34 @@ export function CalculatorCard({
 
     try {
       const calculationResult = calculate(numericInputs);
-      if (calculationResult === null || (typeof calculationResult === 'number' && isNaN(calculationResult))) {
+
+      if (typeof calculationResult === 'string') {
+          // If calculate function returns a specific string error message
+          setError(calculationResult);
+      } else if (calculationResult === null || (typeof calculationResult === 'number' && isNaN(calculationResult))) {
+          // Handle general calculation errors (null or NaN)
           setError("Calculation resulted in an invalid value (e.g., division by zero or inconsistent inputs). Please check your inputs.");
       } else if (typeof calculationResult === 'number') {
-          // Check if result represents time or mass and is negative
-          const resultIsNegativeRestricted = resultLabel.toLowerCase().includes('time') || resultLabel.toLowerCase().includes('mass');
+          // Check if result represents a value that shouldn't be negative (like time or mass)
+          const resultIsNegativeRestricted =
+              resultLabel.toLowerCase().includes('time') ||
+              resultLabel.toLowerCase().includes('mass') ||
+              resultLabel.toLowerCase().includes('length') ||
+              resultLabel.toLowerCase().includes('distance') ||
+              resultLabel.toLowerCase().includes('radius') ||
+              resultLabel.toLowerCase().includes('frequency') ||
+              resultLabel.toLowerCase().includes('wavelength') ||
+              resultLabel.toLowerCase().includes('resistance') ||
+              resultLabel.toLowerCase().includes('speed'); // Speed is magnitude, non-negative
+
           if (resultIsNegativeRestricted && calculationResult < 0) {
-              setError(`Calculation resulted in a negative ${resultLabel.toLowerCase()}, which is invalid.`);
+              setError(`Calculation resulted in a negative ${resultLabel.toLowerCase()}, which is physically invalid in this context.`);
           } else {
-            setResult(calculationResult.toFixed(4));
+              setResult(calculationResult.toFixed(4));
           }
       } else {
-           setResult(calculationResult); // Allow string results (e.g., for efficiency or specific messages)
+           // Should not happen based on type definition, but good fallback
+           setError('An unexpected result type was received from the calculation.');
       }
     } catch (err: any) {
       console.error('Calculation error:', err);
@@ -128,9 +158,7 @@ export function CalculatorCard({
         <CardContent className="space-y-4">
           {inputFields.map((field) => (
             <div key={field.name} className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2 sm:gap-4">
-              <Label htmlFor={field.name} className="text-sm sm:text-right">
-                {field.label}
-              </Label>
+              <Label htmlFor={field.name} className="text-sm sm:text-right" dangerouslySetInnerHTML={{ __html: field.label }} />
               <div className="col-span-1 sm:col-span-2 flex items-center gap-2">
                   <Input
                     id={field.name}
@@ -139,12 +167,24 @@ export function CalculatorCard({
                     step="any" // Allow decimals
                     value={inputValues[field.name]}
                     onChange={handleInputChange}
-                    placeholder={`Enter ${field.label.toLowerCase()}`}
+                    placeholder={`Enter ${field.label.replace(/<[^>]*>/g, '').toLowerCase()}`} // Strip HTML for placeholder
                     required
-                    min={!field.allowNegative && (['t', 'm', 'm1', 'm2', 'M'].includes(field.name) || field.label.toLowerCase().includes('time') || field.label.toLowerCase().includes('mass')) ? "0" : undefined} // Set min="0" for non-negative fields
+                    // Set min="0" for fields that cannot be negative unless explicitly allowed
+                    min={!field.allowNegative && (
+                        field.label.toLowerCase().includes('time') ||
+                        field.label.toLowerCase().includes('mass') ||
+                        field.label.toLowerCase().includes('length') ||
+                        field.label.toLowerCase().includes('distance') ||
+                        field.label.toLowerCase().includes('radius') ||
+                        field.label.toLowerCase().includes('frequency') ||
+                        field.label.toLowerCase().includes('wavelength') ||
+                        field.label.toLowerCase() === 'absolute temperature (t)' ||
+                        field.label.toLowerCase() === 'heat input (q<sub class="text-[0.6em] align-baseline">h</sub>)' ||
+                         field.label.toLowerCase().includes('resistance')
+                     ) ? "0" : undefined}
                     className="flex-grow"
                   />
-                   <span className="text-sm text-muted-foreground whitespace-nowrap">{field.unit}</span>
+                   <span className="text-sm text-muted-foreground whitespace-nowrap" dangerouslySetInnerHTML={{ __html: field.unit }} />
               </div>
             </div>
           ))}
@@ -168,7 +208,7 @@ export function CalculatorCard({
                 <Terminal className="h-4 w-4" />
                 <AlertTitle>{resultLabel}</AlertTitle>
                 <AlertDescription className="font-semibold text-lg">
-                    {result} {resultUnit}
+                    {result} <span dangerouslySetInnerHTML={{ __html: resultUnit }}/>
                  </AlertDescription>
             </Alert>
           )}
