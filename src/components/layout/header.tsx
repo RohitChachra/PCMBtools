@@ -1,5 +1,5 @@
 
-'use client'; // Add 'use client' directive
+'use client';
 
 import Link from 'next/link';
 import { BookOpenText, FlaskConical, Atom, Sigma, Shapes, Calculator } from 'lucide-react';
@@ -19,12 +19,12 @@ import {
 import { cn } from "@/lib/utils";
 import * as React from 'react'; // Import React
 
-// Define navigation items with potential sub-items
 const navItems = [
   {
     trigger: { label: 'Mathematics', icon: Sigma },
-    href: '/math', // Main link if no sub-items or for mobile fallback
+    href: '/math',
     subItems: [
+
       { href: '/math/geometry', title: 'Geometry Calculator', description: 'Calculate properties of 2D/3D shapes.', icon: Shapes },
       { href: '/math/graphing', title: 'Graphing Calculator', description: 'Visualize functions interactively.', icon: Calculator },
     ],
@@ -85,10 +85,12 @@ export function Header() {
               <NavigationMenuItem key={item.trigger.label}>
                 {item.subItems ? (
                   <>
-                    {/* Wrap Trigger in Link for direct navigation on click */}
+
                     <Link href={item.href} legacyBehavior passHref>
-                      <NavigationMenuTrigger className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary data-[state=open]:text-primary">
-                        <item.trigger.icon className="h-4 w-4 mr-1" />
+
+                     <NavigationMenuTrigger className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=open]:bg-muted data-[state=open]:text-muted-foreground">
+                      <item.trigger.icon className="h-4 w-4 mr-1" />
+
                         {item.trigger.label}
                       </NavigationMenuTrigger>
                     </Link>
@@ -109,9 +111,10 @@ export function Header() {
                     </NavigationMenuContent>
                   </>
                 ) : (
-                  // Items without submenus just navigate directly
+
+
                   <Link href={item.href} legacyBehavior passHref>
-                    <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                    <NavigationMenuLink >
                        <item.trigger.icon className="h-4 w-4 mr-1" />
                        {item.trigger.label}
                     </NavigationMenuLink>
@@ -131,7 +134,9 @@ export function Header() {
         <div className="md:hidden flex items-center gap-2 ml-auto"> {/* Use ml-auto */}
            <ThemeToggleButton />
           <Sheet>
-            <SheetTrigger asChild>
+            <SheetTrigger asChild
+
+            >
               <Button variant="ghost" size="icon">
                 <Menu className="h-6 w-6" />
                 <span className="sr-only">Toggle Menu</span>
@@ -145,7 +150,7 @@ export function Header() {
                 </Link>
                 {navItems.map((item) => (
                     <div key={item.trigger.label}>
-                      <Link
+                    <Link
                         href={item.href} // Main link for the section header
                         className="flex items-center gap-2 rounded-md p-2 text-lg font-medium hover:bg-accent"
 
@@ -153,18 +158,22 @@ export function Header() {
                         <item.trigger.icon className="h-5 w-5" />
                         {item.trigger.label}
                       </Link>
-                       {/* Render sub-items if they exist */}
+
+
                        {item.subItems && (
                          <div className="pl-8 pt-2 grid gap-2">
                            {item.subItems.map((subItem) => (
-                             <Link
-                               key={subItem.href}
-                               href={subItem.href}
-                               className="flex items-center gap-2 rounded-md p-2 text-base font-medium text-muted-foreground hover:bg-accent/80 hover:text-accent-foreground"
+                           <Link
+                           key={subItem.href}
+                           href={subItem.href}
+                           className="flex items-center gap-2 rounded-md p-2 text-base font-medium text-muted-foreground hover:bg-accent/80 hover:text-accent-foreground"
 
-                              >
-                                {subItem.icon && <subItem.icon className="h-4 w-4" /> /* Conditionally render icon */}
-                                {subItem.title}
+                          >
+
+                            {subItem.icon && <subItem.icon className="h-4 w-4" />}
+
+                            {subItem.title}
+
                               </Link>
                            ))}
                          </div>
