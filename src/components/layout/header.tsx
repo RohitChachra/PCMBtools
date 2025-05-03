@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { BookOpenText, FlaskConical, Atom, Sigma, Shapes, Calculator as CalculatorIcon, ArrowRightLeft } from 'lucide-react'; // Added ArrowRightLeft
+import { BookOpenText, FlaskConical, Atom, Sigma, Shapes, Calculator as CalculatorIcon, ArrowRightLeft, Microscope } from 'lucide-react'; // Added Microscope
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Menu } from 'lucide-react';
@@ -14,6 +14,7 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
 import * as React from 'react';
@@ -36,12 +37,15 @@ const navItems = [
   {
     trigger: { label: 'Physics', icon: Atom },
     href: '/physics',
-    subItems: [ // Add sub-items for Physics
-        { href: '/physics', title: 'Physics Calculator Hub', description: 'Explore all physics calculators.', icon: Atom }, // Added link to main physics page
+    subItems: [
+        { href: '/physics', title: 'Physics Calculator Hub', description: 'Explore all physics calculators.', icon: Atom },
         { href: '/physics/unit-converter', title: 'Unit Converter', description: 'Convert common physics units.', icon: ArrowRightLeft },
-        // Can add direct links to major calculator sections later if needed
-        // { href: '/physics#kinematics', title: 'Kinematics', description: 'Motion calculations.'},
     ],
+  },
+   { // New Entry for Biology
+    trigger: { label: 'Biology', icon: Microscope },
+    href: '/biology',
+    // No sub-items currently for Biology
   },
 ];
 
@@ -89,31 +93,37 @@ export function Header() {
           <NavigationMenuList>
             {navItems.map((item) => (
               <NavigationMenuItem key={item.trigger.label}>
-                 {/* Wrap the entire trigger in a Link for direct navigation */}
-                <Link href={item.href} legacyBehavior passHref>
-                  <NavigationMenuTrigger>
-                      <item.trigger.icon className="h-4 w-4 mr-1" />
-                      {item.trigger.label}
-                   </NavigationMenuTrigger>
-                 </Link>
-                {item.subItems && (
-                  <NavigationMenuContent>
-                     {/* Adjust width dynamically or based on content */}
-                     <ul className="grid w-[450px] gap-3 p-4 md:w-[550px] lg:w-[650px]" style={{ gridTemplateColumns: `repeat(${Math.min(item.subItems.length, 3)}, minmax(0, 1fr))`}}>
-                      {item.subItems.map((subItem) => (
-                        <ListItem
-                          key={subItem.title}
-                          title={subItem.title}
-                          href={subItem.href}
-                          icon={subItem.icon}
-                        >
-                          {subItem.description}
-                        </ListItem>
-                      ))}
-                    </ul>
-                  </NavigationMenuContent>
-                )}
-                {/* If no subItems, the Link wrapping the trigger handles navigation */}
+                 {item.subItems ? (
+                     <>
+                         <NavigationMenuTrigger>
+                             <Link href={item.href} className="flex items-center gap-1">
+                                <item.trigger.icon className="h-4 w-4" />
+                                {item.trigger.label}
+                            </Link>
+                         </NavigationMenuTrigger>
+                         <NavigationMenuContent>
+                             <ul className="grid w-[450px] gap-3 p-4 md:w-[550px] lg:w-[650px]" style={{ gridTemplateColumns: `repeat(${Math.min(item.subItems.length, 3)}, minmax(0, 1fr))`}}>
+                              {item.subItems.map((subItem) => (
+                                <ListItem
+                                  key={subItem.title}
+                                  title={subItem.title}
+                                  href={subItem.href}
+                                  icon={subItem.icon}
+                                >
+                                  {subItem.description}
+                                </ListItem>
+                              ))}
+                            </ul>
+                          </NavigationMenuContent>
+                     </>
+                 ) : (
+                    <Link href={item.href} legacyBehavior passHref>
+                        <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "flex items-center gap-1")}>
+                             <item.trigger.icon className="h-4 w-4" />
+                             {item.trigger.label}
+                        </NavigationMenuLink>
+                    </Link>
+                 )}
               </NavigationMenuItem>
             ))}
           </NavigationMenuList>

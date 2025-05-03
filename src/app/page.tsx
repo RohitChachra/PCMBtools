@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sigma, FlaskConical, Atom } from 'lucide-react';
+import { Sigma, FlaskConical, Atom, Microscope } from 'lucide-react'; // Added Microscope
 import Image from 'next/image';
 
 export default function Home() {
@@ -12,24 +12,32 @@ export default function Home() {
       description: 'Visualize complex functions and calculate geometric properties.',
       href: '/math',
       icon: Sigma,
-      imageHint: 'mathematics equations graphs', // Updated hint
-      imageSrc: '/mathematics.jpg',
+      imageHint: 'mathematics equations graphs',
+      imageSrc: '/mathematics.jpg', // Assuming image exists
     },
     {
       title: 'Chemistry',
       description: 'Explore molecular structures and properties with PubChem data.',
       href: '/chemistry',
       icon: FlaskConical,
-      imageHint: 'chemistry molecules structure', // Updated hint
-      imageSrc: '/chemistry.jpg',
+      imageHint: 'chemistry molecules structure',
+      imageSrc: '/chemistry.jpg', // Assuming image exists
     },
     {
-      title: 'Physics', // Added description
+      title: 'Physics',
       description: 'Calculate solutions to physics problems across various topics.',
       href: '/physics',
       icon: Atom,
       imageHint: 'physics formulas equations',
-      imageSrc: '/physics.jpg', // Placeholder
+      imageSrc: '/physics.jpg', // Assuming image exists
+    },
+     { // New Entry for Biology
+      title: 'Biology',
+      description: 'Explore biological concepts with interactive flashcards.',
+      href: '/biology',
+      icon: Microscope,
+      imageHint: 'biology cell dna microscope',
+      imageSrc: '/biology.jpg', // Assuming image exists
     },
   ];
 
@@ -40,25 +48,26 @@ export default function Home() {
           Welcome to PCMBtools
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground">
-          Explore the wonders of Math, Chemistry, and Physics — all in one place. Dive into interactive graphs, molecular structures, and scientific calculators.
+          Explore the wonders of Math, Chemistry, Physics, and Biology — all in one place. Dive into interactive graphs, molecular structures, scientific calculators, and flashcards.
         </p>
       </section>
 
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
+      {/* Updated grid to accommodate 4 items */}
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-7xl">
         {features.map((feature) => (
           <Card key={feature.title} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
             <CardHeader className="items-center text-center p-4 bg-secondary rounded-t-lg">
-               {/* Ensure parent div has relative positioning and overflow hidden */}
                <div className="relative w-full h-40 mb-4 rounded-md overflow-hidden">
                 <Image
                   src={feature.imageSrc}
-                  alt={feature.title} // Use title for better alt text
-                  layout="fill" // Make image fill the container
-                  objectFit="cover" // Crop image to cover the container
-                  data-ai-hint={feature.imageHint} // Keep AI hint
+                  alt={feature.title}
+                  layout="fill"
+                  objectFit="cover"
+                  data-ai-hint={feature.imageHint}
+                  // Add placeholder if needed or onError handler
                 />
                </div>
-              <CardTitle className="flex items-center justify-center gap-2 text-xl"> {/* Added justify-center */}
+              <CardTitle className="flex items-center justify-center gap-2 text-xl">
                 <feature.icon className="h-6 w-6 text-primary" />
                 {feature.title}
               </CardTitle>
