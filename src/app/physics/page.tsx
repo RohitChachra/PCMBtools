@@ -1,14 +1,13 @@
 
 'use client';
 
-import React from 'react'; // Removed useState as it's not used
+import React from 'react';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-// Removed Card components as they are not used directly here
 import { KinematicsCalculators } from '@/components/physics/kinematics';
 import { DynamicsCalculators } from '@/components/physics/dynamics';
 import { WorkEnergyPowerCalculators } from '@/components/physics/work-energy-power';
@@ -17,18 +16,28 @@ import { CircularMotionCalculators } from '@/components/physics/circular-motion'
 import { ElectrostaticsCalculators } from '@/components/physics/electrostatics';
 import { ThermodynamicsCalculators } from '@/components/physics/thermodynamics';
 import { WavesSoundCalculators } from '@/components/physics/waves-sound';
-import { CurrentElectricityCalculators } from '@/components/physics/current-electricity'; // New import
-import { OpticsCalculators } from '@/components/physics/optics'; // New import
-import { MagnetismCalculators } from '@/components/physics/magnetism'; // New import
+import { CurrentElectricityCalculators } from '@/components/physics/current-electricity';
+import { OpticsCalculators } from '@/components/physics/optics';
+import { MagnetismCalculators } from '@/components/physics/magnetism';
+import UnitConverterPage from './unit-converter/page'; // Import the UnitConverter component
+import { ArrowRightLeft } from 'lucide-react'; // Import icon for converter
 
 interface CalculatorCategory {
   id: string;
   title: string;
   description: string;
   component: React.FC;
+  icon?: React.ElementType; // Optional icon
 }
 
 const calculatorCategories: CalculatorCategory[] = [
+  {
+    id: 'unit_converter',
+    title: 'Unit Converter',
+    description: 'Convert between common physics units (length, mass, time, etc.).',
+    component: UnitConverterPage, // Use the imported component
+    icon: ArrowRightLeft,
+  },
   {
     id: 'kinematics',
     title: 'Kinematics',
@@ -77,19 +86,19 @@ const calculatorCategories: CalculatorCategory[] = [
     description: 'Calculate wave speed, frequency, and wavelength.',
     component: WavesSoundCalculators,
   },
-   { // New Category: Current Electricity
+   {
     id: 'current_electricity',
     title: 'Current Electricity',
     description: "Calculate voltage, current, resistance (Ohm's Law), and power.",
     component: CurrentElectricityCalculators,
   },
-  { // New Category: Optics
+  {
     id: 'optics',
     title: 'Optics',
     description: 'Calculate properties using lens/mirror formulas and refractive index.',
     component: OpticsCalculators,
   },
-  { // New Category: Magnetism
+  {
     id: 'magnetism',
     title: 'Magnetism',
     description: 'Calculate magnetic forces on moving charges and current-carrying wires.',
@@ -102,17 +111,21 @@ export default function PhysicsPage() {
     <div className="space-y-8">
       <h1 className="text-3xl font-bold">Physics Calculator Hub</h1>
       <p className="text-muted-foreground">
-        Explore various physics concepts and solve problems using the calculators below. Select a topic to view the available calculators.
+        Explore various physics concepts and solve problems using the tools below. Select a topic to view the available calculators or the unit converter.
       </p>
 
       <Accordion type="single" collapsible className="w-full space-y-4">
         {calculatorCategories.map((category) => (
           <AccordionItem value={category.id} key={category.id} className="border rounded-lg bg-card shadow-sm">
             <AccordionTrigger className="px-6 py-4 text-lg font-semibold hover:no-underline">
-              {category.title}
+              <div className="flex items-center gap-2">
+                 {category.icon && <category.icon className="h-5 w-5 text-primary" />}
+                 {category.title}
+              </div>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6 pt-0">
               <p className="text-muted-foreground mb-6">{category.description}</p>
+              {/* Render the component directly. For the unit converter, it will render the full page content within the accordion */}
               <category.component />
             </AccordionContent>
           </AccordionItem>
