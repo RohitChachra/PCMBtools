@@ -37,7 +37,7 @@ export default function Home() {
       href: '/biology',
       icon: Microscope,
       imageHint: 'biology cell dna microscope',
-      imageSrc: '/biology.jpg', // Assuming image exists
+      imageSrc: '/biology.jpeg', // Assuming image exists
     },
   ];
 
@@ -64,6 +64,7 @@ export default function Home() {
                   layout="fill"
                   objectFit="cover"
                   data-ai-hint={feature.imageHint}
+                  placeholder="empty"
                   // Add placeholder if needed or onError handler
                 />
                </div>
