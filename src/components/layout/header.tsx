@@ -37,6 +37,7 @@ const navItems = [
     trigger: { label: 'Physics', icon: Atom },
     href: '/physics',
     subItems: [ // Add sub-items for Physics
+        { href: '/physics', title: 'Physics Calculator Hub', description: 'Explore all physics calculators.', icon: Atom }, // Added link to main physics page
         { href: '/physics/unit-converter', title: 'Unit Converter', description: 'Convert common physics units.', icon: ArrowRightLeft },
         // Can add direct links to major calculator sections later if needed
         // { href: '/physics#kinematics', title: 'Kinematics', description: 'Motion calculations.'},
@@ -90,7 +91,7 @@ export function Header() {
               <NavigationMenuItem key={item.trigger.label}>
                  {/* Wrap the entire trigger in a Link for direct navigation */}
                 <Link href={item.href} legacyBehavior passHref>
-                   <NavigationMenuTrigger className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
+                  <NavigationMenuTrigger>
                       <item.trigger.icon className="h-4 w-4 mr-1" />
                       {item.trigger.label}
                    </NavigationMenuTrigger>
@@ -134,6 +135,7 @@ export function Header() {
               </Button>
             </SheetTrigger>
             <SheetContent side="right">
+               {/* Added Title and Description for Accessibility */}
                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                <SheetDescription className="sr-only">Main navigation links for PCMBtools</SheetDescription>
               <div className="grid gap-4 py-6">
