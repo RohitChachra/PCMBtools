@@ -281,7 +281,7 @@ export default function UnitConverterPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-primary">
                     <CategoryIcon className="h-5 w-5" />
-                    {category} Conversion
+                    {category}
                 </CardTitle>
                  <CardDescription>Convert units of {category.toLowerCase()}.</CardDescription>
               </CardHeader>
@@ -375,3 +375,6 @@ export default function UnitConverterPage() {
 
 
 
+
+
+    
