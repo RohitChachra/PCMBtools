@@ -1293,6 +1293,171 @@ export const BIOLOGY_TERMS: string[] = [
     "Zygomatic bone", // Cheekbone
     "Zygote",
 
+    // Diseases and Disorders (Illustrative List - Needs Expansion)
+    "Acromegaly",
+    "Addison's disease",
+    "AIDS (Acquired Immunodeficiency Syndrome)",
+    "Alzheimer's disease",
+    "Appendicitis",
+    "Asperger syndrome",
+    "Atherosclerosis",
+    "Athlete's foot",
+    "Autism spectrum disorder",
+    "Autoimmune disease",
+    "Beriberi",
+    "Bipolar disorder",
+    "Botulism",
+    "Bronchitis",
+    "Brucellosis",
+    "Bubonic plague",
+    "Bursitis",
+    "Cancer",
+    "Candidiasis",
+    "Carpal tunnel syndrome",
+    "Cataract",
+    "Celiac disease",
+    "Cerebral palsy",
+    "Chickenpox",
+    "Chlamydia",
+    "Cholera",
+    "Chronic fatigue syndrome",
+    "Cirrhosis",
+    "Common cold",
+    "Congestive heart failure",
+    "Conjunctivitis", // Pink eye
+    "COVID-19",
+    "Crohn's disease",
+    "Cushing's syndrome",
+    "Cystic fibrosis",
+    "Dementia",
+    "Dengue fever",
+    "Depression",
+    "Dermatitis",
+    "Diphtheria",
+    "Down syndrome",
+    "Dysentery",
+    "Dyslexia",
+    "Ebola virus disease",
+    "Eczema",
+    "Emphysema",
+    "Endometriosis",
+    "Fibromyalgia",
+    "Food poisoning",
+    "Gallstones",
+    "Gastritis",
+    "Gastroenteritis",
+    "Genital herpes",
+    "Gigantism",
+    "Glomerulonephritis",
+    "Gonorrhea",
+    "Grave's disease",
+    "Guillain-Barré syndrome",
+    "Hay fever",
+    "Heart attack", // Myocardial infarction
+    "Hemophilia",
+    "Herpes simplex",
+    "HIV (Human Immunodeficiency Virus)",
+    "Hodgkin's lymphoma",
+    "Huntington's disease",
+    "Hyperparathyroidism",
+    "Hypoparathyroidism",
+    "Impetigo",
+    "Irritable bowel syndrome (IBS)",
+    "Kawasaki disease",
+    "Klinefelter syndrome",
+    "Kyphosis",
+    "Lassa fever",
+    "Legionnaires' disease",
+    "Leprosy",
+    "Leptospirosis",
+    "Listeriosis",
+    "Lupus",
+    "Lyme disease",
+    "Lymphoma",
+    "Mad cow disease", // Bovine Spongiform Encephalopathy
+    "Marfan syndrome",
+    "Measles",
+    "Melanoma",
+    "Meningitis",
+    "Mononucleosis",
+    "Multiple sclerosis",
+    "Mumps",
+    "Muscular dystrophy",
+    "Myasthenia gravis",
+    "Myocardial infarction", // Heart attack
+    "Narcolepsy",
+    "Nephritis",
+    "Obsessive-compulsive disorder (OCD)",
+    "Otitis media", // Middle ear infection
+    "Pancreatitis",
+    "Panic disorder",
+    "Parkinson's disease",
+    "Pellagra",
+    "Peptic ulcer disease",
+    "Pericarditis",
+    "Periodontitis",
+    "Peritonitis",
+    "Pertussis", // Whooping cough
+    "Phenylketonuria (PKU)",
+    "Pleurisy",
+    "Poliomyelitis", // Polio
+    "Polycystic ovary syndrome (PCOS)",
+    "Porphyria",
+    "Post-traumatic stress disorder (PTSD)",
+    "Preeclampsia",
+    "Prion disease",
+    "Progeria",
+    "Psoriasis",
+    "Pulmonary embolism",
+    "Q fever",
+    "Raynaud's phenomenon",
+    "Respiratory syncytial virus (RSV)",
+    "Rheumatic fever",
+    "Ringworm",
+    "Rosacea",
+    "Rotavirus infection",
+    "Rubella", // German measles
+    "Salmonellosis",
+    "Sarcoidosis",
+    "Scabies",
+    "Scarlet fever",
+    "Schistosomiasis",
+    "Schizophrenia",
+    "Sepsis",
+    "Shingles",
+    "Sickle cell anemia",
+    "Sinusitis",
+    "Sjögren's syndrome",
+    "Smallpox",
+    "Strep throat",
+    "Syphilis",
+    "Tay-Sachs disease",
+    "Tendonitis",
+    "Thalassemia",
+    "Thrush", // Oral candidiasis
+    "Tonsillitis",
+    "Tourette syndrome",
+    "Toxic shock syndrome",
+    "Toxoplasmosis",
+    "Trachoma",
+    "Trichinosis",
+    "Trypanosomiasis", // Sleeping sickness
+    "Turner syndrome",
+    "Typhoid fever",
+    "Typhus",
+    "Ulcerative colitis",
+    "Urinary tract infection (UTI)",
+    "Varicella", // Chickenpox
+    "Vasculitis",
+    "Vitiligo",
+    "Von Willebrand disease",
+    "West Nile virus infection",
+    "Whooping cough", // Pertussis
+    "Wilson's disease",
+    "Yellow fever",
+    "Zika virus disease",
+
+
     // Animals, Insects, Mammals, Nature
     "Aardvark",
     "Abdomen (insect)",
@@ -1584,7 +1749,6 @@ export const BIOLOGY_TERMS: string[] = [
     "Dormouse", // Rodent
     "Dotterel", // Bird
     "Dove",
-    "Dragon", // Mythical / Lizard name
     "Dragonfly",
     "Drake", // Male duck
     "Drill", // Primate
@@ -2397,7 +2561,6 @@ export const BIOLOGY_TERMS: string[] = [
     "Savanna", // Habitat
     "Sawfish",
     "Sawfly", // Insect
-    "Scabies", // Mite infestation
     "Scad", // Fish
     "Scale (fish/reptile)",
     "Scaled quail",
@@ -2407,7 +2570,6 @@ export const BIOLOGY_TERMS: string[] = [
     "Scarlet macaw",
     "Scaup", // Duck
     "Scent gland",
-    "Schistosomiasis", // Disease from fluke
     "Schneider's skink", // Lizard
     "Scimitar oryx", // Extinct in wild
     "Scissor-tailed flycatcher",
@@ -2793,8 +2955,6 @@ export const BIOLOGY_TERMS: string[] = [
     "Umbrellabird",
     "Undergrowth", // Vegetation layer
     "Ungulate", // Hoofed mammal
-    "Unicorn", // Mythical
-    "Unicorn fish",
     "Upland sandpiper",
     "Ural owl",
     "Uranoscopus", // Stargazer fish
@@ -2937,7 +3097,6 @@ export const BIOLOGY_TERMS: string[] = [
     "Wrasse", // Fish
     "Wren",
     "Wryneck", // Bird
-    "Wyvern", // Mythical
     "Xantus's hummingbird",
     "Xenarthra", // Mammal group (anteaters, sloths, armadillos)
     "Xenops", // Bird
@@ -2985,4 +3144,3 @@ export const BIOLOGY_TERMS: string[] = [
     "Zosteropidae", // White-eye bird family
 
 ];
-
