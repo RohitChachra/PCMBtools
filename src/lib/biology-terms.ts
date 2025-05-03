@@ -684,7 +684,8 @@ export const BIOLOGY_TERMS: string[] = [
     "Migration",
     "Mimicry",
     "Mineral",
-    "Mitochondrion",
+    "Mitochondria", // Added
+    "Mitochondrion", // Singular form
     "Mitosis",
     "Mole",
     "Molecular biology",

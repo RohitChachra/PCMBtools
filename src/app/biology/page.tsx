@@ -199,7 +199,7 @@ export default function BiologyPage() {
         <Card className="overflow-hidden shadow-lg">
           <CardHeader>
             <CardTitle>{summaryData.title}</CardTitle>
-            <CardDescription>Summary from Wikipedia</CardDescription>
+            {/* <CardDescription>Summary from Wikipedia</CardDescription> // Removed this line */}
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
              <div className="md:col-span-1 relative w-full h-48 md:h-auto bg-muted rounded-md flex items-center justify-center overflow-hidden border">
