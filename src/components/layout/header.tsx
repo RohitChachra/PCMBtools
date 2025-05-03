@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { BookOpenText, FlaskConical, Atom, Sigma, Shapes, Calculator } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet"; // Added SheetTitle, SheetDescription
 import { Menu } from 'lucide-react';
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import {
@@ -14,7 +14,7 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
-  navigationMenuTriggerStyle,
+  navigationMenuTriggerStyle, // Keep the import
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
 import * as React from 'react'; // Import React
@@ -85,12 +85,10 @@ export function Header() {
               <NavigationMenuItem key={item.trigger.label}>
                 {item.subItems ? (
                   <>
-
+                    {/* Link wraps the trigger for click navigation */}
                     <Link href={item.href} legacyBehavior passHref>
-
-                     <NavigationMenuTrigger className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=open]:bg-muted data-[state=open]:text-muted-foreground">
-                      <item.trigger.icon className="h-4 w-4 mr-1" />
-
+                     <NavigationMenuTrigger>
+                        <item.trigger.icon className="h-4 w-4 mr-1" />
                         {item.trigger.label}
                       </NavigationMenuTrigger>
                     </Link>
@@ -111,10 +109,10 @@ export function Header() {
                     </NavigationMenuContent>
                   </>
                 ) : (
-
-
+                  // Non-dropdown items
                   <Link href={item.href} legacyBehavior passHref>
-                    <NavigationMenuLink >
+                    {/* Apply static classes matching navigationMenuTriggerStyle's default */}
+                    <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
                        <item.trigger.icon className="h-4 w-4 mr-1" />
                        {item.trigger.label}
                     </NavigationMenuLink>
@@ -134,15 +132,16 @@ export function Header() {
         <div className="md:hidden flex items-center gap-2 ml-auto"> {/* Use ml-auto */}
            <ThemeToggleButton />
           <Sheet>
-            <SheetTrigger asChild
-
-            >
+            <SheetTrigger asChild>
               <Button variant="ghost" size="icon">
                 <Menu className="h-6 w-6" />
                 <span className="sr-only">Toggle Menu</span>
               </Button>
             </SheetTrigger>
             <SheetContent side="right">
+              {/* Add accessible title and description */}
+               <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+               <SheetDescription className="sr-only">Main navigation links for PCMBtools</SheetDescription>
               <div className="grid gap-4 py-6">
                 <Link href="/" className="flex items-center gap-2 mb-4 px-2"> {/* Added padding */}
                   <BookOpenText className="h-6 w-6 text-primary" />
@@ -188,4 +187,3 @@ export function Header() {
     </header>
   );
 }
-
