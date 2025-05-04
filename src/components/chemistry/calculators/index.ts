@@ -1,7 +1,7 @@
 
 export * from './MoleConceptCalculator';
+export * from './ThermochemistryCalculator';
 // Export other calculators as they are created
-// export * from './ThermochemistryCalculator';
 // export * from './GasLawsCalculator';
 // export * from './ConcentrationCalculator';
 // export * from './StoichiometryCalculator';

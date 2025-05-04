@@ -12,9 +12,9 @@ import { Calculator } from 'lucide-react'; // Use a general calculator icon
 
 // Import the actual calculator components
 import { MoleConceptCalculator } from '@/components/chemistry/calculators/MoleConceptCalculator';
+import { ThermochemistryCalculator } from '@/components/chemistry/calculators/ThermochemistryCalculator'; // Import the real component
 // ... import other calculator components when they are created ...
 // Example imports (assuming they exist later):
-// import { ThermochemistryCalculator } from '@/components/chemistry/calculators/ThermochemistryCalculator';
 // import { GasLawsCalculator } from '@/components/chemistry/calculators/GasLawsCalculator';
 // import { ConcentrationCalculator } from '@/components/chemistry/calculators/ConcentrationCalculator';
 // import { StoichiometryCalculator } from '@/components/chemistry/calculators/StoichiometryCalculator';
@@ -28,7 +28,8 @@ import { MoleConceptCalculator } from '@/components/chemistry/calculators/MoleCo
 // Placeholder components for calculators not yet implemented
 const ComingSoonCalculator = ({ title }: { title: string }) => <div className="p-4 border rounded bg-muted text-muted-foreground">{title} - Coming Soon!</div>;
 
-const ThermochemistryCalculator = () => <ComingSoonCalculator title="Thermochemistry Calculator" />;
+// Remove placeholder for Thermochemistry
+// const ThermochemistryCalculator = () => <ComingSoonCalculator title="Thermochemistry Calculator" />;
 const GasLawsCalculator = () => <ComingSoonCalculator title="Gas Laws Calculator" />;
 const ConcentrationCalculator = () => <ComingSoonCalculator title="Concentration Calculator" />;
 const StoichiometryCalculator = () => <ComingSoonCalculator title="Stoichiometry Calculator" />;
@@ -59,7 +60,7 @@ const calculatorCategories: CalculatorCategory[] = [
     id: 'thermochemistry',
     title: 'Thermochemistry',
     description: 'Calculate heat transfer (q=mcΔT), enthalpy changes, and reaction heat.',
-    component: ThermochemistryCalculator,
+    component: ThermochemistryCalculator, // Use the implemented component
     icon: Calculator,
   },
   {
