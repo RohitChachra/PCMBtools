@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { BookOpenText, FlaskConical, Atom, Sigma, Shapes, Calculator as CalculatorIcon, ArrowRightLeft, Microscope } from 'lucide-react'; // Added Microscope
+import { BookOpenText, FlaskConical, Atom, Sigma, Shapes, Calculator as CalculatorIcon, ArrowRightLeft, Microscope, BarChart3 } from 'lucide-react'; // Added BarChart3 for Stats
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Menu } from 'lucide-react';
@@ -27,6 +27,7 @@ const navItems = [
       { href: '/math/geometry', title: 'Geometry Calculator', description: 'Calculate properties of 2D/3D shapes.', icon: Shapes },
       { href: '/math/graphing', title: 'Graphing Calculator', description: 'Visualize functions interactively.', icon: CalculatorIcon },
       { href: '/math/scientific-calculator', title: 'Scientific Calculator', description: 'Perform complex calculations.', icon: Sigma },
+      { href: '/math/statistics', title: 'Statistics Calculator', description: 'Analyze discrete & continuous data.', icon: BarChart3 }, // Added Stats Calc
     ],
   },
   {
@@ -42,7 +43,7 @@ const navItems = [
         { href: '/physics/unit-converter', title: 'Unit Converter', description: 'Convert common physics units.', icon: ArrowRightLeft },
     ],
   },
-   { // New Entry for Biology
+   {
     trigger: { label: 'Biology', icon: Microscope },
     href: '/biology',
     // No sub-items currently for Biology
@@ -96,10 +97,12 @@ export function Header() {
                  {item.subItems ? (
                      <>
                          <NavigationMenuTrigger>
-                             <Link href={item.href} className="flex items-center gap-1">
-                                <item.trigger.icon className="h-4 w-4" />
-                                {item.trigger.label}
-                            </Link>
+                             <Link href={item.href} legacyBehavior passHref>
+                                <a className="flex items-center gap-1"> {/* Wrap Link content in an anchor for styling */}
+                                    <item.trigger.icon className="h-4 w-4" />
+                                    {item.trigger.label}
+                                </a>
+                             </Link>
                          </NavigationMenuTrigger>
                          <NavigationMenuContent>
                              <ul className="grid w-[450px] gap-3 p-4 md:w-[550px] lg:w-[650px]" style={{ gridTemplateColumns: `repeat(${Math.min(item.subItems.length, 3)}, minmax(0, 1fr))`}}>
