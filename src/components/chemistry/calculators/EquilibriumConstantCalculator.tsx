@@ -61,11 +61,6 @@ export const EquilibriumConstantCalculator = () => {
         defaultValues: { kc: '', temperature_k: '', delta_n: '' },
     });
 
-    // Determine which form hook to use based on the selected calculation type
-    const activeForm = calcType === 'kc' ? kcForm : kpFromKcForm;
-    // We still need handleSubmit from the active form for the form onSubmit prop
-    const { handleSubmit } = activeForm;
-
     const handleCalcTypeChange = (value: CalcType) => {
         setCalcType(value);
         setResult(null); // Clear results and errors when changing type
@@ -141,7 +136,6 @@ export const EquilibriumConstantCalculator = () => {
      // Dynamic form rendering based on calcType
     const renderFormFields = () => {
         if (calcType === 'kc') {
-            // Explicitly use kcForm's control and errors
             const { control: kcControl, formState: { errors: kcErrors } } = kcForm;
             return (
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -168,7 +162,7 @@ export const EquilibriumConstantCalculator = () => {
                  </div>
             );
         } else if (calcType === 'kp_from_kc') {
-             // Explicitly use kpFromKcForm's control and errors
+             // Use kpFromKcForm's control and errors
              const { control: kpControl, formState: { errors: kpErrors } } = kpFromKcForm;
             return (
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -197,12 +191,15 @@ export const EquilibriumConstantCalculator = () => {
         return null;
     };
 
+    // Use the correct handleSubmit for the form
+    const currentHandleSubmit = calcType === 'kc' ? kcForm.handleSubmit : kpFromKcForm.handleSubmit;
+
   return (
     <Card className="w-full">
       <CardContent className="pt-6">
         <div className="mb-4">
           <Label htmlFor="calc-type-select">Calculation Type</Label>
-          <Select onValueChange={(value) => handleCalcTypeChange(value as CalcType)} value={calcType}>
+          <Select onValueChange={handleCalcTypeChange} value={calcType}>
             <SelectTrigger id="calc-type-select" className="w-full sm:w-[280px]">
               <SelectValue placeholder="Select calculation..." />
             </SelectTrigger>
@@ -224,8 +221,8 @@ export const EquilibriumConstantCalculator = () => {
             </p>
          )}
 
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {/* Pass the correct submit handler */}
+        <form onSubmit={currentHandleSubmit(onSubmit)} className="space-y-4">
             {renderFormFields()}
             <Button type="submit" className="w-full sm:w-auto">Calculate {calcType.toUpperCase()}</Button>
         </form>
