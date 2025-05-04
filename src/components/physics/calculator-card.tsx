@@ -16,13 +16,13 @@ interface InputField {
 }
 
 interface CalculatorCardProps {
-  title: string;
+  title: string; // Can contain basic HTML like <sub>
   description: string;
   inputFields: InputField[];
-  formula: string; // e.g., "v = u + at" or "η = (W / Q<sub>H</sub>) * 100"
+  formula: string; // Can contain basic HTML like <sub>
   calculate: (inputs: Record<string, number>) => number | string | null; // Can return string for specific error messages, null for general errors
-  resultLabel: string;
-  resultUnit: string;
+  resultLabel: string; // Can contain basic HTML like <sub>
+  resultUnit: string; // Can contain basic HTML like <sub>
   children?: ReactNode; // For optional additional content or explanations
 }
 
@@ -75,9 +75,6 @@ export function CalculatorCard({
       }
 
       // Check for negative inputs where inappropriate (unless explicitly allowed)
-      // Example: time, mass, length, distance, radius, frequency, wavelength, absolute temp (K)
-      // Allow charge (q), voltage (V), current (I), force (F), velocity (v, u), acceleration (a),
-      // angle (theta), angular velocity (omega), work (W), height (h relative to ref), heat capacity (c), temp change (deltaT)
       const isNegativeRestricted = !field.allowNegative && (
           field.label.toLowerCase().includes('time') ||
           field.label.toLowerCase().includes('mass') ||
@@ -86,13 +83,16 @@ export function CalculatorCard({
           field.label.toLowerCase().includes('radius') ||
           field.label.toLowerCase().includes('frequency') ||
           field.label.toLowerCase().includes('wavelength') ||
-          field.label.toLowerCase() === 'absolute temperature (t)' || // Specific check for absolute temp
-          field.label.toLowerCase() === 'heat input (q<sub class="text-[0.6em] align-baseline">h</sub>)' ||
+          field.label.toLowerCase() === 'absolute temperature (t)' ||
+          field.label.toLowerCase().includes('heat input (q<sub>') || // Check for Q_H
+          field.label.toLowerCase().includes('volume') || // Volume should be positive
+          field.label.toLowerCase().includes('area') || // Area should be positive
+          field.label.toLowerCase().includes('density') || // Density usually positive
           field.label.toLowerCase().includes('resistance') // Resistance usually positive
       );
 
-      if (isNegativeRestricted && numValue < 0) {
-          setError(`Invalid input for ${field.label}. Value cannot be negative.`);
+      if (isNegativeRestricted && numValue <= 0) { // Changed to <= 0 for volume, area etc.
+          setError(`Invalid input for ${field.label}. Value must be positive.`);
           validationError = true;
           break;
       }
@@ -124,10 +124,18 @@ export function CalculatorCard({
               resultLabel.toLowerCase().includes('frequency') ||
               resultLabel.toLowerCase().includes('wavelength') ||
               resultLabel.toLowerCase().includes('resistance') ||
+              resultLabel.toLowerCase().includes('density') ||
+              resultLabel.toLowerCase().includes('pressure') && calculationResult < 0 && Math.abs(calculationResult) > 1e-9 || // Pressure is often positive
               resultLabel.toLowerCase().includes('speed'); // Speed is magnitude, non-negative
 
-          if (resultIsNegativeRestricted && calculationResult < 0) {
-              setError(`Calculation resulted in a negative ${resultLabel.toLowerCase()}, which is physically invalid in this context.`);
+          // Allow negative Potential Energy and Work
+          const allowNegativeResult =
+                resultLabel.toLowerCase().includes('potential energy') ||
+                resultLabel.toLowerCase().includes('work done');
+
+
+          if (resultIsNegativeRestricted && !allowNegativeResult && calculationResult < 0 && Math.abs(calculationResult) > 1e-9) {
+              setError(`Calculation resulted in a negative ${resultLabel.replace(/<[^>]*>/g, '').toLowerCase()}, which is physically invalid in this context.`);
           } else {
               setResult(calculationResult.toFixed(4));
           }
@@ -144,7 +152,8 @@ export function CalculatorCard({
   return (
     <Card className="w-full shadow-md">
       <CardHeader>
-        <CardTitle className="text-lg">{title}</CardTitle>
+        {/* Use dangerouslySetInnerHTML for CardTitle */}
+        <CardTitle className="text-lg" dangerouslySetInnerHTML={{ __html: title }} />
         <CardDescription>{description}</CardDescription>
          {/* Use dangerouslySetInnerHTML to render HTML in the formula */}
          <p className="text-sm text-muted-foreground pt-1">
@@ -158,6 +167,7 @@ export function CalculatorCard({
         <CardContent className="space-y-4">
           {inputFields.map((field) => (
             <div key={field.name} className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2 sm:gap-4">
+              {/* Use dangerouslySetInnerHTML for Label */}
               <Label htmlFor={field.name} className="text-sm sm:text-right" dangerouslySetInnerHTML={{ __html: field.label }} />
               <div className="col-span-1 sm:col-span-2 flex items-center gap-2">
                   <Input
@@ -169,7 +179,7 @@ export function CalculatorCard({
                     onChange={handleInputChange}
                     placeholder={`Enter ${field.label.replace(/<[^>]*>/g, '').toLowerCase()}`} // Strip HTML for placeholder
                     required
-                    // Set min="0" for fields that cannot be negative unless explicitly allowed
+                    // Set min="0" or slightly above zero for restricted fields
                     min={!field.allowNegative && (
                         field.label.toLowerCase().includes('time') ||
                         field.label.toLowerCase().includes('mass') ||
@@ -179,11 +189,15 @@ export function CalculatorCard({
                         field.label.toLowerCase().includes('frequency') ||
                         field.label.toLowerCase().includes('wavelength') ||
                         field.label.toLowerCase() === 'absolute temperature (t)' ||
-                        field.label.toLowerCase() === 'heat input (q<sub class="text-[0.6em] align-baseline">h</sub>)' ||
-                         field.label.toLowerCase().includes('resistance')
+                        field.label.toLowerCase().includes('heat input (q<sub>') ||
+                        field.label.toLowerCase().includes('volume') ||
+                        field.label.toLowerCase().includes('area') ||
+                        field.label.toLowerCase().includes('density') ||
+                        field.label.toLowerCase().includes('resistance')
                      ) ? "0" : undefined}
                     className="flex-grow"
                   />
+                   {/* Use dangerouslySetInnerHTML for unit */}
                    <span className="text-sm text-muted-foreground whitespace-nowrap" dangerouslySetInnerHTML={{ __html: field.unit }} />
               </div>
             </div>
@@ -206,7 +220,8 @@ export function CalculatorCard({
           {result !== null && !error && ( // Only show result if there is no error
             <Alert className="w-full bg-secondary">
                 <Terminal className="h-4 w-4" />
-                <AlertTitle>{resultLabel}</AlertTitle>
+                {/* Use dangerouslySetInnerHTML for AlertTitle */}
+                <AlertTitle dangerouslySetInnerHTML={{ __html: resultLabel }} />
                 <AlertDescription className="font-semibold text-lg">
                     {result} <span dangerouslySetInnerHTML={{ __html: resultUnit }}/>
                  </AlertDescription>
@@ -217,3 +232,4 @@ export function CalculatorCard({
     </Card>
   );
 }
+

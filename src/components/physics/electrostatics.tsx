@@ -10,20 +10,22 @@ export function ElectrostaticsCalculators() {
         title="Coulomb's Law (Force)"
         description="Calculate the electrostatic force (F) between two point charges."
         inputFields={[
-          { name: 'q1', label: 'Charge 1 (q₁)', unit: 'C' },
-          { name: 'q2', label: 'Charge 2 (q₂)', unit: 'C' },
+          // Use dangerouslySetInnerHTML compatible string for label
+          { name: 'q1', label: 'Charge 1 (q<sub class="text-[0.6em] align-baseline">1</sub>)', unit: 'C', allowNegative: true },
+          { name: 'q2', label: 'Charge 2 (q<sub class="text-[0.6em] align-baseline">2</sub>)', unit: 'C', allowNegative: true },
           { name: 'r', label: 'Distance (r)', unit: 'm' },
         ]}
-        formula="F = k * |q₁ * q₂| / r²"
+        // Use dangerouslySetInnerHTML compatible string for formula
+        formula="F = k * |q<sub class='text-[0.6em] align-baseline'>1</sub> * q<sub class='text-[0.6em] align-baseline'>2</sub>| / r²"
         calculate={({ q1, q2, r }) => {
-          if (r === 0) return null; // Avoid division by zero
+          if (r <= 0) return "Distance must be positive."; // Distance must be positive
           return (k * Math.abs(q1 * q2)) / (r * r); // Returns magnitude
         }}
         resultLabel="Electrostatic Force (F)"
         resultUnit="N"
         children={
           <p className="text-xs text-muted-foreground mt-2">
-            Calculates the magnitude of the force. Uses k ≈ 8.99 × 10⁹ N m² C⁻².
+            Calculates the magnitude of the force. Uses k ≈ 8.99 × 10⁹ N m² C⁻². Distance must be positive.
           </p>
         }
       />
@@ -33,12 +35,12 @@ export function ElectrostaticsCalculators() {
         title="Electric Field (from Force)"
         description="Calculate the electric field (E) experienced by a test charge."
         inputFields={[
-          { name: 'F', label: 'Force (F)', unit: 'N' },
-          { name: 'q', label: 'Test Charge (q)', unit: 'C' },
+          { name: 'F', label: 'Force (F)', unit: 'N', allowNegative: true },
+          { name: 'q', label: 'Test Charge (q)', unit: 'C', allowNegative: true },
         ]}
         formula="E = F / q"
         calculate={({ F, q }) => {
-          if (q === 0) return null; // Avoid division by zero
+          if (q === 0) return "Test charge cannot be zero."; // Avoid division by zero
           return F / q;
         }}
         resultLabel="Electric Field (E)"
@@ -50,22 +52,23 @@ export function ElectrostaticsCalculators() {
         title="Electric Potential (Point Charge)"
         description="Calculate the electric potential (V) at a distance from a point charge."
         inputFields={[
-          { name: 'q', label: 'Source Charge (q)', unit: 'C' },
+          { name: 'q', label: 'Source Charge (q)', unit: 'C', allowNegative: true },
           { name: 'r', label: 'Distance (r)', unit: 'm' },
         ]}
         formula="V = k * q / r"
         calculate={({ q, r }) => {
-          if (r === 0) return null; // Avoid division by zero
+          if (r <= 0) return "Distance must be positive."; // Avoid division by zero and non-physical distance
           return (k * q) / r;
         }}
         resultLabel="Electric Potential (V)"
         resultUnit="V"
          children={
           <p className="text-xs text-muted-foreground mt-2">
-            Uses k ≈ 8.99 × 10⁹ N m² C⁻².
+            Uses k ≈ 8.99 × 10⁹ N m² C⁻². Distance must be positive.
           </p>
         }
       />
     </div>
   );
 }
+

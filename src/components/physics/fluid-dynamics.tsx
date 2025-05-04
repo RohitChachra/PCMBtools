@@ -30,7 +30,7 @@ export function FluidDynamicsCalculators(): JSX.Element { // Explicit return typ
         title="Pressure"
         description="Calculate the pressure (P) exerted by a force over an area."
         inputFields={[
-          { name: 'F', label: 'Force (F)', unit: 'N', allowNegative: true }, // Force can be negative (e.g., tension causing negative pressure)
+          { name: 'F', label: 'Force (F)', unit: 'N', allowNegative: true }, // Force can be negative
           { name: 'A', label: 'Area (A)', unit: 'm²' }, // Area must be positive
         ]}
         formula="P = F / A"
@@ -44,18 +44,22 @@ export function FluidDynamicsCalculators(): JSX.Element { // Explicit return typ
 
       {/* Buoyant Force Calculator (Archimedes' Principle) */}
       <CalculatorCard
+        // Pass title with HTML sub tag
         title="Buoyant Force"
         description="Calculate the buoyant force (F<sub class='text-[0.6em] align-baseline'>B</sub>) on a submerged object."
         inputFields={[
-          { name: 'rho_fluid', label: 'Fluid Density (ρ<sub class=\"text-[0.6em] align-baseline\">fluid</sub>)', unit: 'kg/m³' }, // Density must be non-negative
-          { name: 'V_submerged', label: 'Submerged Volume (V<sub class=\"text-[0.6em] align-baseline\">sub</sub>)', unit: 'm³' }, // Volume must be positive
+          // Pass label with HTML sub tag
+          { name: 'rho_fluid', label: 'Fluid Density (ρ<sub class="text-[0.6em] align-baseline">fluid</sub>)', unit: 'kg/m³' }, // Density must be non-negative
+          { name: 'V_submerged', label: 'Submerged Volume (V<sub class="text-[0.6em] align-baseline">sub</sub>)', unit: 'm³' }, // Volume must be positive
         ]}
-        formula="F<sub>B</sub> = ρ<sub>fluid</sub> * V<sub>sub</sub> * g"
+        // Pass formula with HTML sub tag
+        formula="F<sub class='text-[0.6em] align-baseline'>B</sub> = ρ<sub class='text-[0.6em] align-baseline'>fluid</sub> * V<sub class='text-[0.6em] align-baseline'>sub</sub> * g"
         calculate={({ rho_fluid, V_submerged }) => {
           if (rho_fluid < 0) return "Fluid density cannot be negative.";
           if (V_submerged <= 0) return "Submerged volume must be positive.";
           return rho_fluid * V_submerged * g;
         }}
+        // Pass resultLabel with HTML sub tag
         resultLabel="Buoyant Force (F<sub class='text-[0.6em] align-baseline'>B</sub>)"
         resultUnit="N"
         children={
@@ -69,3 +73,4 @@ export function FluidDynamicsCalculators(): JSX.Element { // Explicit return typ
     </div>
   );
 }
+

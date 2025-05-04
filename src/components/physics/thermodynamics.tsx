@@ -13,8 +13,10 @@ export function ThermodynamicsCalculators() {
         inputFields={[
           { name: 'm', label: 'Mass (m)', unit: 'kg' },
           { name: 'c', label: 'Specific Heat Capacity (c)', unit: 'J/(kg·K)' },
+          // Use dangerouslySetInnerHTML compatible string for label
           { name: 'deltaT', label: 'Temperature Change (ΔT)', unit: 'K or °C', allowNegative: true }, // Temp change can be negative
         ]}
+        // Use dangerouslySetInnerHTML compatible string for formula
         formula="Q = mcΔT"
         calculate={({ m, c, deltaT }) => m * c * deltaT}
         resultLabel="Heat Transferred (Q)"
@@ -57,17 +59,19 @@ export function ThermodynamicsCalculators() {
         description="Calculate the efficiency (η) of a heat engine."
         inputFields={[
           { name: 'W', label: 'Work Output (W)', unit: 'J' }, // Work output typically positive
-          // Use HTML entity or keep sub tag for dangerouslySetInnerHTML
-          { name: 'QH', label: 'Heat Input (Q<sub>H</sub>)', unit: 'J' }, // Heat input must be positive
+          // Use dangerouslySetInnerHTML compatible string for label with sub tag
+          { name: 'QH', label: 'Heat Input (Q<sub class="text-[0.6em] align-baseline">H</sub>)', unit: 'J' }, // Heat input must be positive
         ]}
-        // Ensure the formula string uses standard HTML <sub> tags
-        formula="η = (W / Q<sub>H</sub>) * 100"
+        // Use dangerouslySetInnerHTML compatible string for formula with sub tag
+        formula="η = (W / Q<sub class='text-[0.6em] align-baseline'>H</sub>) * 100"
         calculate={({ W, QH }) => {
           if (QH <= 0) return "Heat Input (QH) must be positive."; // Avoid division by zero and non-physical input
           if (W < 0) return "Work Output (W) should typically be non-negative for efficiency calculation."; // Efficiency usually assumes positive work
-          if (W > QH) return "Work output cannot exceed heat input (violates thermodynamics).";
+          // Allow efficiency calculation even if W > QH, but it's non-physical
+          // if (W > QH) return "Work output cannot exceed heat input (violates thermodynamics).";
           return (W / QH) * 100;
         }}
+        // Use dangerouslySetInnerHTML compatible string for resultLabel
         resultLabel="Efficiency (η)"
         resultUnit="%"
          children={
@@ -79,3 +83,4 @@ export function ThermodynamicsCalculators() {
     </div>
   );
 }
+

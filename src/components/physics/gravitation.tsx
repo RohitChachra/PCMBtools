@@ -11,21 +11,23 @@ export function GravitationCalculators() {
         title="Gravitational Force"
         description="Calculate the gravitational force (F) between two masses."
         inputFields={[
-          { name: 'm1', label: 'Mass 1 (m₁)', unit: 'kg' }, // Mass cannot be negative
-          { name: 'm2', label: 'Mass 2 (m₂)', unit: 'kg' }, // Mass cannot be negative
-          { name: 'r', label: 'Distance (r)', unit: 'm' }, // Distance cannot be negative
+          // Use dangerouslySetInnerHTML compatible string for label
+          { name: 'm1', label: 'Mass 1 (m<sub class="text-[0.6em] align-baseline">1</sub>)', unit: 'kg' }, // Mass cannot be negative
+          { name: 'm2', label: 'Mass 2 (m<sub class="text-[0.6em] align-baseline">2</sub>)', unit: 'kg' }, // Mass cannot be negative
+          { name: 'r', label: 'Distance (r)', unit: 'm' }, // Distance cannot be negative or zero
         ]}
-        formula="F = G * (m₁ * m₂) / r²"
+        // Use dangerouslySetInnerHTML compatible string for formula
+        formula="F = G * (m<sub class='text-[0.6em] align-baseline'>1</sub> * m<sub class='text-[0.6em] align-baseline'>2</sub>) / r²"
         calculate={({ m1, m2, r }) => {
-          if (r === 0) return null; // Avoid division by zero
-          if (m1 < 0 || m2 < 0 || r < 0) return null; // Validate inputs implicitly handled by CalculatorCard, but good to have check
+          if (r <= 0) return "Distance must be positive."; // Avoid division by zero and non-physical distance
+          if (m1 < 0 || m2 < 0) return "Mass cannot be negative."; // Validate inputs
           return (G * m1 * m2) / (r * r);
         }}
         resultLabel="Gravitational Force (F)"
         resultUnit="N"
         children={
           <p className="text-xs text-muted-foreground mt-2">
-            Uses G ≈ 6.674 × 10⁻¹¹ m³ kg⁻¹ s⁻². Masses and distance must be non-negative.
+            Uses G ≈ 6.674 × 10⁻¹¹ m³ kg⁻¹ s⁻². Masses must be non-negative, distance must be positive.
           </p>
         }
       />
@@ -35,21 +37,23 @@ export function GravitationCalculators() {
         title="Gravitational Potential Energy"
         description="Calculate the gravitational potential energy (U) between two masses."
         inputFields={[
-          { name: 'm1', label: 'Mass 1 (m₁)', unit: 'kg' }, // Mass cannot be negative
-          { name: 'm2', label: 'Mass 2 (m₂)', unit: 'kg' }, // Mass cannot be negative
-          { name: 'r', label: 'Distance (r)', unit: 'm' }, // Distance cannot be negative
+          // Use dangerouslySetInnerHTML compatible string for label
+          { name: 'm1', label: 'Mass 1 (m<sub class="text-[0.6em] align-baseline">1</sub>)', unit: 'kg' }, // Mass cannot be negative
+          { name: 'm2', label: 'Mass 2 (m<sub class="text-[0.6em] align-baseline">2</sub>)', unit: 'kg' }, // Mass cannot be negative
+          { name: 'r', label: 'Distance (r)', unit: 'm' }, // Distance cannot be negative or zero
         ]}
-        formula="U = -G * (m₁ * m₂) / r"
+        // Use dangerouslySetInnerHTML compatible string for formula
+        formula="U = -G * (m<sub class='text-[0.6em] align-baseline'>1</sub> * m<sub class='text-[0.6em] align-baseline'>2</sub>) / r"
         calculate={({ m1, m2, r }) => {
-           if (r === 0) return null; // Avoid division by zero
-           if (m1 < 0 || m2 < 0 || r < 0) return null; // Validate inputs
+           if (r <= 0) return "Distance must be positive."; // Avoid division by zero and non-physical distance
+           if (m1 < 0 || m2 < 0) return "Mass cannot be negative."; // Validate inputs
            return (-G * m1 * m2) / r;
         }}
         resultLabel="Gravitational Potential Energy (U)"
         resultUnit="J"
          children={
           <p className="text-xs text-muted-foreground mt-2">
-             Note: Potential energy is typically negative, relative to infinite separation. Uses G ≈ 6.674 × 10⁻¹¹ m³ kg⁻¹ s⁻². Masses and distance must be non-negative.
+             Note: Potential energy is typically negative, relative to infinite separation. Uses G ≈ 6.674 × 10⁻¹¹ m³ kg⁻¹ s⁻². Masses must be non-negative, distance must be positive.
           </p>
         }
       />
@@ -60,22 +64,23 @@ export function GravitationCalculators() {
         description="Calculate the gravitational acceleration (g) caused by a large mass (M)."
         inputFields={[
           { name: 'M', label: 'Central Mass (M)', unit: 'kg', defaultValue: '5.972e24' }, // Mass cannot be negative
-          { name: 'r', label: 'Distance from center (r)', unit: 'm', defaultValue: '6.371e6' }, // Distance cannot be negative
+          { name: 'r', label: 'Distance from center (r)', unit: 'm', defaultValue: '6.371e6' }, // Distance cannot be negative or zero
         ]}
         formula="g = G * M / r²"
         calculate={({ M, r }) => {
-          if (r === 0) return null; // Avoid division by zero
-          if (M < 0 || r < 0) return null; // Validate inputs
+          if (r <= 0) return "Distance must be positive."; // Avoid division by zero and non-physical distance
+          if (M < 0) return "Mass cannot be negative."; // Validate inputs
           return (G * M) / (r * r);
         }}
         resultLabel="Gravitational Acceleration (g)"
         resultUnit="m/s²"
          children={
            <p className="text-xs text-muted-foreground mt-2">
-             Defaults are for Earth's surface. Uses G ≈ 6.674 × 10⁻¹¹ m³ kg⁻¹ s⁻². Mass and distance must be non-negative.
+             Defaults are for Earth's surface. Uses G ≈ 6.674 × 10⁻¹¹ m³ kg⁻¹ s⁻². Mass must be non-negative, distance must be positive.
            </p>
          }
       />
     </div>
   );
 }
+
