@@ -18,16 +18,7 @@ PCMB tools is a comprehensive suite of tools designed to assist students and ent
 *   Educators seeking interactive tools to supplement their teaching.
 *   Science enthusiasts interested in exploring various scientific concepts.
 
-**Technology Stack:**
-
-*   Next.js
-*   React
-*   Tailwind CSS
-
 **Contributing:**
 
 Contributions to PCMB tools are welcome! If you have suggestions for new features, improvements to existing tools, or want to report a bug, please open an issue or submit a pull request on our GitHub repository.
 
-**License:**
-
-This project is licensed under the [MIT License](https://opensource.org/license/mit/).
