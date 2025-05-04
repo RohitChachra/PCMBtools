@@ -228,13 +228,13 @@ const ScientificCalculatorPage: React.FC = () => {
                 </CardHeader>
                 <CardContent className="p-4 space-y-4">
                      {/* Display Area */}
-                     <div className="bg-muted rounded-md p-4 border border-input min-h-[6rem] text-right space-y-1">
+                     <div className="bg-muted rounded-md p-4 border border-input min-h-[6rem] text-right space-y-1 flex flex-col justify-end">
                          <Input
                              type="text"
                              value={expression}
                              readOnly // Display only, input via buttons/keyboard
                              placeholder="Enter expression"
-                             className="text-2xl h-auto bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-foreground font-mono w-full text-right p-0"
+                             className="text-xl h-auto bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-foreground font-mono w-full text-right p-0 mb-1" // Adjusted size and margin
                              aria-label="Calculator expression display"
                              onKeyDown={handleKeyDown} // Attach keydown listener
                              tabIndex={0} // Make focusable
@@ -245,7 +245,7 @@ const ScientificCalculatorPage: React.FC = () => {
                              value={result}
                              readOnly
                              placeholder="Result"
-                             className={`text-xl h-auto bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full text-right p-0 font-semibold ${result.startsWith('Error') ? 'text-destructive' : 'text-primary'}`}
+                             className={`text-2xl h-auto bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full text-right p-0 font-semibold ${result.startsWith('Error') ? 'text-destructive' : 'text-primary'}`} // Changed text-xl to text-2xl
                              aria-label="Calculator result display"
                           />
                     </div>
@@ -285,3 +285,5 @@ const ScientificCalculatorPage: React.FC = () => {
 };
 
 export default ScientificCalculatorPage;
+
+    
