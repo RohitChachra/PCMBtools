@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { Calculator, Scales } from 'lucide-react';
+import { Calculator, Scale } from 'lucide-react'; // Changed Scales to Scale
 import { useToast } from '@/hooks/use-toast';
 import { create, all, type MathJsStatic, type ConfigOptions } from 'mathjs';
 import { cn } from '@/lib/utils';
@@ -127,7 +127,7 @@ export const EquilibriumConstantCalculator = () => {
 
         {result && !error && (
           <Alert variant="success" className="w-full">
-             <Scales className="h-4 w-4 text-primary" />
+             <Scale className="h-4 w-4 text-primary" /> {/* Changed Scales to Scale */}
              <AlertTitle className="text-primary">Calculation Result</AlertTitle>
              <AlertDescription>
                 <p className="mt-2 text-sm font-semibold">
