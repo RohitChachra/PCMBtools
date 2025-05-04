@@ -1,217 +1,99 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input'; // Using Input as display for consistency, but read-only
-import { Calculator as CalculatorIcon } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Calculator as CalculatorIcon, Delete } from 'lucide-react'; // Using Delete for Backspace
 import { useToast } from '@/hooks/use-toast';
-
-// Type for calculator operations
-type Operator = '+' | '-' | '*' | '/';
-type UnaryOperator = 'sqrt' | 'sqr' | 'inv' | 'sin' | 'cos' | 'tan' | 'log' | 'ln' | 'fact' | 'neg' | '%';
+import * as math from 'mathjs';
 
 const ScientificCalculatorPage: React.FC = () => {
-    const [display, setDisplay] = useState<string>('0');
-    const [operand, setOperand] = useState<number | null>(null);
-    const [operator, setOperator] = useState<Operator | null>(null);
-    const [waitingForOperand, setWaitingForOperand] = useState<boolean>(true);
-    const [isRadians, setIsRadians] = useState<boolean>(true); // Default to Radians
+    const [expression, setExpression] = useState<string>('');
+    const [result, setResult] = useState<string>('');
+    const [isRadians, setIsRadians] = useState<boolean>(true);
     const { toast } = useToast();
 
-    const formatNumber = (num: number): string => {
-        // Handle very large or small numbers with exponential notation
-        if (Math.abs(num) > 1e15 || (Math.abs(num) < 1e-6 && num !== 0)) {
-            return num.toExponential(6);
-        }
-        // Limit decimal places for display, avoiding trailing zeros
-        return String(parseFloat(num.toFixed(10)));
-    };
+    // Configure mathjs instance for potential precision later
+    // const mathInstance = math.create(math.all, {
+    //   number: 'BigNumber', // Use BigNumber for higher precision
+    //   precision: 64
+    // });
 
-    const inputDigit = (digit: string) => {
-        if (display.length >= 16 && !waitingForOperand) return; // Limit display length
-
-        if (waitingForOperand) {
-            setDisplay(digit);
-            setWaitingForOperand(false);
-        } else {
-            setDisplay(display === '0' ? digit : display + digit);
+    const formatResult = (value: any): string => {
+        try {
+            // Use math.format for better formatting, especially for BigNumbers if used
+            return math.format(value, { notation: 'fixed', precision: 10 }).replace(/(\.[0-9]*[1-9])0+$|\.0*$/, '$1'); // Remove trailing zeros
+        } catch {
+            return String(value); // Fallback
         }
     };
 
-    const inputDecimal = () => {
-        if (waitingForOperand) {
-            setDisplay('0.');
-            setWaitingForOperand(false);
-        } else if (!display.includes('.')) {
-            setDisplay(display + '.');
-        }
+    const handleButtonClick = (value: string) => {
+        setResult(''); // Clear previous result on new input
+        setExpression((prev) => prev + value);
     };
 
-    const performOperation = (nextOperator: Operator) => {
-        const inputValue = parseFloat(display);
-
-        if (operand === null) {
-            setOperand(inputValue);
-        } else if (operator) {
-            try {
-                const result = calculate(operand, inputValue, operator);
-                if (result === null || !isFinite(result)) {
-                   toast({ title: "Error", description: "Calculation resulted in an invalid value (e.g., division by zero).", variant: "destructive" });
-                   clearAll();
-                   return;
-                }
-                setDisplay(formatNumber(result));
-                setOperand(result);
-            } catch (error: any) {
-                 toast({ title: "Error", description: error.message || "Calculation error", variant: "destructive" });
-                 clearAll();
-                 return;
-            }
-        }
-
-        setWaitingForOperand(true);
-        setOperator(nextOperator);
+    const handleFunctionClick = (func: string) => {
+        setResult('');
+        // Appends function with opening parenthesis, ready for argument input
+        setExpression((prev) => prev + `${func}(`);
     };
 
-    const performUnaryOperation = (unaryOp: UnaryOperator) => {
-        let inputValue = parseFloat(display);
-        let result: number | null = null;
+    const handleConstantClick = (constant: string) => {
+         setResult('');
+         // Append constant name (mathjs recognizes pi and e)
+         setExpression((prev) => prev + constant);
+    };
+
+    const handleEquals = useCallback(() => {
+        if (!expression.trim()) {
+            setResult('');
+            return;
+        }
 
         try {
-             switch (unaryOp) {
-                case 'sqrt':
-                    if (inputValue < 0) throw new Error("Cannot calculate square root of a negative number.");
-                    result = Math.sqrt(inputValue);
-                    break;
-                case 'sqr':
-                    result = inputValue * inputValue;
-                    break;
-                case 'inv': // 1/x
-                    if (inputValue === 0) throw new Error("Cannot divide by zero.");
-                    result = 1 / inputValue;
-                    break;
-                case 'sin':
-                    result = isRadians ? Math.sin(inputValue) : Math.sin(inputValue * (Math.PI / 180));
-                    break;
-                case 'cos':
-                    result = isRadians ? Math.cos(inputValue) : Math.cos(inputValue * (Math.PI / 180));
-                    break;
-                case 'tan':
-                     const angleRad = isRadians ? inputValue : inputValue * (Math.PI / 180);
-                    // Avoid tangent of 90 degrees (or pi/2 radians) multiples - results in Infinity
-                     if (Math.abs(Math.cos(angleRad)) < 1e-15) throw new Error("Tangent is undefined for this angle.");
-                    result = Math.tan(angleRad);
-                    break;
-                case 'log': // Base 10 log
-                    if (inputValue <= 0) throw new Error("Logarithm requires a positive input.");
-                    result = Math.log10(inputValue);
-                    break;
-                case 'ln': // Natural log
-                    if (inputValue <= 0) throw new Error("Natural logarithm requires a positive input.");
-                    result = Math.log(inputValue);
-                    break;
-                case 'fact': // Factorial
-                    if (inputValue < 0 || !Number.isInteger(inputValue)) throw new Error("Factorial requires a non-negative integer.");
-                    if (inputValue > 170) throw new Error("Factorial result too large."); // Approx limit for JS numbers
-                    result = factorial(inputValue);
-                    break;
-                 case 'neg': // Negate (+/-)
-                    result = -inputValue;
-                    break;
-                case '%': // Percentage
-                    if (operand !== null && operator !== null) {
-                         // Calculate percentage based on the current operand
-                         result = operand * (inputValue / 100);
-                    } else {
-                         // If no operation pending, calculate percentage of the displayed value itself (e.g., 50% = 0.5)
-                         result = inputValue / 100;
-                    }
-                    break;
-                default:
-                    break; // Should not happen
+            // Configure angle mode for trig functions
+            const scope = {
+               // Define custom functions or override if needed
+            };
+            const config = {
+                angle: isRadians ? 'rad' : 'deg'
+            };
+            const evalResult = math.evaluate(expression, scope);
+
+            // Handle potential complex results or units if needed in future
+            if (typeof evalResult === 'function') {
+                throw new Error("Invalid expression resulting in a function.");
             }
-
-            if (result === null || !isFinite(result)) {
-                 toast({ title: "Error", description: "Calculation resulted in an invalid value.", variant: "destructive" });
-                 clearAll();
-                 return;
-            }
-            setDisplay(formatNumber(result));
-            // Update operand if calculation was based on it, otherwise keep waiting
-            if (unaryOp !== 'neg' && unaryOp !== '%' ) { // Don't finalize for +/- or simple %
-                 setOperand(result);
-                 setWaitingForOperand(true); // Prepare for next number or operation
-            } else {
-                // For +/- and simple %, just update display, allow further input
-                setWaitingForOperand(false);
-            }
-
-        } catch (error: any) {
-            toast({ title: "Error", description: error.message || "Invalid operation", variant: "destructive" });
-            clearAll();
-        }
-    };
-
-
-    const calculate = (left: number, right: number, op: Operator): number | null => {
-        switch (op) {
-            case '+': return left + right;
-            case '-': return left - right;
-            case '*': return left * right;
-            case '/':
-                if (right === 0) return null; // Division by zero
-                return left / right;
-            default: return null; // Should not happen
-        }
-    };
-
-    // Factorial function
-    const factorial = (n: number): number => {
-        if (n === 0 || n === 1) return 1;
-        let result = 1;
-        for (let i = 2; i <= n; i++) {
-            result *= i;
-        }
-        return result;
-    };
-
-    const handleEquals = () => {
-        const inputValue = parseFloat(display);
-
-        if (operand !== null && operator !== null) {
-             try {
-                const result = calculate(operand, inputValue, operator);
-                 if (result === null || !isFinite(result)) {
-                    toast({ title: "Error", description: "Calculation resulted in an invalid value (e.g., division by zero).", variant: "destructive" });
-                    clearAll();
-                    return;
-                 }
-                setDisplay(formatNumber(result));
-                setOperand(null); // Reset for next independent calculation
-                setOperator(null);
-                setWaitingForOperand(true);
-             } catch (error: any) {
-                 toast({ title: "Error", description: error.message || "Calculation error", variant: "destructive" });
-                 clearAll();
+             if (evalResult === undefined || evalResult === null) {
+                 throw new Error("Invalid expression or undefined result.");
              }
+
+
+            const formatted = formatResult(evalResult);
+            setResult(formatted);
+            // Optional: setExpression(formatted); // Replace expression with result after calculation
+        } catch (error: any) {
+            console.error("Calculation Error:", error);
+            setResult(`Error: ${error.message || 'Invalid Expression'}`);
+             toast({
+                title: "Calculation Error",
+                description: error.message || "Invalid expression. Please check your input.",
+                variant: "destructive",
+             });
         }
-         // If equals is pressed without a pending operation, do nothing or finalize current number
-         // Current behavior: finalize the current number state
-         setWaitingForOperand(true);
-    };
+    }, [expression, isRadians, toast]);
 
     const clearAll = () => {
-        setDisplay('0');
-        setOperand(null);
-        setOperator(null);
-        setWaitingForOperand(true);
+        setExpression('');
+        setResult('');
     };
 
-    const clearEntry = () => {
-        setDisplay('0');
-        setWaitingForOperand(true); // Ready to input new number, but keep pending operation
+    const backspace = () => {
+        setResult(''); // Clear result when modifying expression
+        setExpression((prev) => prev.slice(0, -1));
     };
 
      const toggleRadDeg = () => {
@@ -219,131 +101,160 @@ const ScientificCalculatorPage: React.FC = () => {
          toast({ title: "Mode Changed", description: `Calculator set to ${!isRadians ? 'Radians' : 'Degrees'}` });
     };
 
+    // Handle keyboard input for better UX
     const handleKeyDown = (event: React.KeyboardEvent) => {
+        event.preventDefault(); // Prevent default input behavior sometimes
         const { key } = event;
+
         if (/\d/.test(key)) {
-            inputDigit(key);
+            handleButtonClick(key);
         } else if (key === '.') {
-            inputDecimal();
-        } else if (key === '+' || key === '-' || key === '*' || key === '/') {
-            performOperation(key as Operator);
+            handleButtonClick('.');
+        } else if (key === '+' || key === '-' || key === '*' || key === '/' || key === '^') {
+            handleButtonClick(key);
+        } else if (key === '(' || key === ')') {
+            handleButtonClick(key);
         } else if (key === 'Enter' || key === '=') {
-            event.preventDefault(); // Prevent form submission if inside one
             handleEquals();
         } else if (key === 'Backspace') {
-            // Basic backspace: clear last digit or reset to 0
-             if (display.length > 1) {
-                 setDisplay(display.slice(0, -1));
-             } else {
-                 setDisplay('0');
-                 setWaitingForOperand(true);
-             }
+            backspace();
         } else if (key === 'Escape') {
             clearAll();
+        } else if (key.toLowerCase() === 'p' && event.ctrlKey) { // Ctrl+P for Pi
+             handleConstantClick('pi');
+        } else if (key.toLowerCase() === 'e' && event.ctrlKey) { // Ctrl+E for Euler's number
+            handleConstantClick('e');
         }
-        // Add more key bindings if needed (e.g., 's' for sin, 'c' for cos, etc.)
+        // Add more complex bindings if desired (e.g., 's' for sin, 'sqrt' etc.)
+         else if (key.toLowerCase() === 's') handleFunctionClick('sin');
+         else if (key.toLowerCase() === 'c') handleFunctionClick('cos');
+         else if (key.toLowerCase() === 't') handleFunctionClick('tan');
+         else if (key.toLowerCase() === 'l') handleFunctionClick('log10'); // 'l' for log base 10
+         else if (key.toLowerCase() === 'n') handleFunctionClick('log'); // 'n' for natural log (ln)
+         else if (key === '!') handleButtonClick('!');
+         else if (key === '%') handleButtonClick('%'); // Math.js supports % operator or mod function
+         else if (key.toLowerCase() === 'r') toggleRadDeg(); // 'r' to toggle Rad/Deg
+         else if (key.toLowerCase() === 'q') handleFunctionClick('sqrt'); // 'q' for sqrt
+         // Need a key for x^2, maybe Shift+6 for ^ then 2?
     };
 
-
-    // Button Layout Configuration
+    // Button Layout Configuration - Adjusted for mathjs syntax
+    // Removed memory and ANS/EXP buttons for simplicity
     const buttonRows = [
         // Row 1: Scientific functions
         [
-            { label: isRadians ? 'Deg' : 'Rad', action: toggleRadDeg, className: 'bg-muted hover:bg-muted/80', width: 'w-16' },
-            { label: 'sin', action: () => performUnaryOperation('sin'), className: 'bg-muted hover:bg-muted/80', width: 'w-16'},
-            { label: 'cos', action: () => performUnaryOperation('cos'), className: 'bg-muted hover:bg-muted/80', width: 'w-16'},
-            { label: 'tan', action: () => performUnaryOperation('tan'), className: 'bg-muted hover:bg-muted/80', width: 'w-16'},
-            { label: 'log', action: () => performUnaryOperation('log'), className: 'bg-muted hover:bg-muted/80', width: 'w-16'}, // base 10
-            { label: 'ln', action: () => performUnaryOperation('ln'), className: 'bg-muted hover:bg-muted/80', width: 'w-16'}, // natural log
+            { label: isRadians ? 'Deg' : 'Rad', action: toggleRadDeg, className: 'bg-muted hover:bg-muted/80 text-xs', width: 'w-auto' },
+            { label: 'sin', action: () => handleFunctionClick('sin'), className: 'bg-muted hover:bg-muted/80', width: 'w-auto'},
+            { label: 'cos', action: () => handleFunctionClick('cos'), className: 'bg-muted hover:bg-muted/80', width: 'w-auto'},
+            { label: 'tan', action: () => handleFunctionClick('tan'), className: 'bg-muted hover:bg-muted/80', width: 'w-auto'},
+            { label: 'log', action: () => handleFunctionClick('log10'), className: 'bg-muted hover:bg-muted/80', width: 'w-auto'}, // base 10
+            { label: 'ln', action: () => handleFunctionClick('log'), className: 'bg-muted hover:bg-muted/80', width: 'w-auto'}, // natural log (mathjs uses log)
         ],
         // Row 2: More scientific functions
         [
-            { label: '√', action: () => performUnaryOperation('sqrt'), className: 'bg-muted hover:bg-muted/80', width: 'w-16'},
-            { label: 'x²', action: () => performUnaryOperation('sqr'), className: 'bg-muted hover:bg-muted/80', width: 'w-16'},
-            { label: '1/x', action: () => performUnaryOperation('inv'), className: 'bg-muted hover:bg-muted/80', width: 'w-16'},
-            { label: 'n!', action: () => performUnaryOperation('fact'), className: 'bg-muted hover:bg-muted/80', width: 'w-16'},
-            { label: 'π', action: () => { setDisplay(String(Math.PI)); setWaitingForOperand(false); }, className: 'bg-muted hover:bg-muted/80', width: 'w-16'},
-             { label: 'e', action: () => { setDisplay(String(Math.E)); setWaitingForOperand(false); }, className: 'bg-muted hover:bg-muted/80', width: 'w-16'},
+            { label: '√', action: () => handleFunctionClick('sqrt'), className: 'bg-muted hover:bg-muted/80', width: 'w-auto'},
+            // Use ^ for power, user types the exponent
+            { label: 'x^y', action: () => handleButtonClick('^'), className: 'bg-muted hover:bg-muted/80', width: 'w-auto'},
+            { label: '(', action: () => handleButtonClick('('), className: 'bg-muted hover:bg-muted/80', width: 'w-auto'},
+            { label: ')', action: () => handleButtonClick(')'), className: 'bg-muted hover:bg-muted/80', width: 'w-auto'},
+            { label: 'π', action: () => handleConstantClick('pi'), className: 'bg-muted hover:bg-muted/80', width: 'w-auto'},
+             { label: 'e', action: () => handleConstantClick('e'), className: 'bg-muted hover:bg-muted/80', width: 'w-auto'},
         ],
          // Row 3: Standard operations and clear
         [
-            { label: 'AC', action: clearAll, className: 'bg-destructive/80 hover:bg-destructive text-destructive-foreground', width: 'w-16'},
-            { label: 'CE', action: clearEntry, className: 'bg-destructive/60 hover:bg-destructive/80 text-destructive-foreground', width: 'w-16'},
-            { label: '%', action: () => performUnaryOperation('%'), className: 'bg-secondary hover:bg-secondary/80', width: 'w-16'},
-             { label: '+/-', action: () => performUnaryOperation('neg'), className: 'bg-secondary hover:bg-secondary/80', width: 'w-16'},
-            { label: '÷', action: () => performOperation('/'), className: 'bg-secondary hover:bg-secondary/80', width: 'w-16'},
-             { label: '×', action: () => performOperation('*'), className: 'bg-secondary hover:bg-secondary/80', width: 'w-16'},
+            { label: 'AC', action: clearAll, className: 'bg-destructive/80 hover:bg-destructive text-destructive-foreground', width: 'w-auto'},
+            { label: <Delete className="h-5 w-5" />, action: backspace, className: 'bg-secondary hover:bg-secondary/80', width: 'w-auto', title:"Backspace" }, // Backspace Icon
+            { label: '%', action: () => handleButtonClick('%'), className: 'bg-secondary hover:bg-secondary/80', width: 'w-auto'}, // mathjs uses % operator
+            { label: 'n!', action: () => handleButtonClick('!'), className: 'bg-secondary hover:bg-secondary/80', width: 'w-auto'}, // Factorial
+            { label: '÷', action: () => handleButtonClick('/'), className: 'bg-secondary hover:bg-secondary/80', width: 'w-auto'},
+             { label: '×', action: () => handleButtonClick('*'), className: 'bg-secondary hover:bg-secondary/80', width: 'w-auto'},
         ],
         // Row 4: Digits 7-9 and Minus
         [
-            { label: '7', action: () => inputDigit('7'), width: 'w-16' },
-            { label: '8', action: () => inputDigit('8'), width: 'w-16' },
-            { label: '9', action: () => inputDigit('9'), width: 'w-16' },
-            { label: '(', action: () => {}, className: 'bg-muted hover:bg-muted/80', width: 'w-16', disabled: true }, // Placeholder
-            { label: ')', action: () => {}, className: 'bg-muted hover:bg-muted/80', width: 'w-16', disabled: true }, // Placeholder
-            { label: '-', action: () => performOperation('-'), className: 'bg-secondary hover:bg-secondary/80', width: 'w-16'},
+            { label: '7', action: () => handleButtonClick('7'), width: 'w-auto' },
+            { label: '8', action: () => handleButtonClick('8'), width: 'w-auto' },
+            { label: '9', action: () => handleButtonClick('9'), width: 'w-auto' },
+            { label: '-', action: () => handleButtonClick('-'), className: 'bg-secondary hover:bg-secondary/80 col-span-3', width: 'w-full'}, // Span 3 cols
         ],
         // Row 5: Digits 4-6 and Plus
         [
-            { label: '4', action: () => inputDigit('4'), width: 'w-16' },
-            { label: '5', action: () => inputDigit('5'), width: 'w-16' },
-            { label: '6', action: () => inputDigit('6'), width: 'w-16' },
-            { label: 'mc', action: () => {}, className: 'bg-muted hover:bg-muted/80', width: 'w-16', disabled: true }, // Placeholder Memory Clear
-            { label: 'mr', action: () => {}, className: 'bg-muted hover:bg-muted/80', width: 'w-16', disabled: true }, // Placeholder Memory Recall
-            { label: '+', action: () => performOperation('+'), className: 'bg-secondary hover:bg-secondary/80', width: 'w-16'},
+            { label: '4', action: () => handleButtonClick('4'), width: 'w-auto' },
+            { label: '5', action: () => handleButtonClick('5'), width: 'w-auto' },
+            { label: '6', action: () => handleButtonClick('6'), width: 'w-auto' },
+            { label: '+', action: () => handleButtonClick('+'), className: 'bg-secondary hover:bg-secondary/80 col-span-3', width: 'w-full'}, // Span 3 cols
         ],
          // Row 6 & 7 combined: Digits 1-3, 0, ., =
         [
-            { label: '1', action: () => inputDigit('1'), width: 'w-16' },
-            { label: '2', action: () => inputDigit('2'), width: 'w-16' },
-            { label: '3', action: () => inputDigit('3'), width: 'w-16' },
-            { label: 'm+', action: () => {}, className: 'bg-muted hover:bg-muted/80', width: 'w-16', disabled: true }, // Placeholder Memory Plus
-            { label: 'm-', action: () => {}, className: 'bg-muted hover:bg-muted/80', width: 'w-16', disabled: true }, // Placeholder Memory Minus
-            { label: '=', action: handleEquals, className: 'bg-primary hover:bg-primary/90 text-primary-foreground row-span-2 h-full', width: 'w-16' }, // Spans 2 rows vertically
+            { label: '1', action: () => handleButtonClick('1'), width: 'w-auto' },
+            { label: '2', action: () => handleButtonClick('2'), width: 'w-auto' },
+            { label: '3', action: () => handleButtonClick('3'), width: 'w-auto' },
+             { label: '=', action: handleEquals, className: 'bg-primary hover:bg-primary/90 text-primary-foreground row-span-2 h-full col-span-3', width: 'w-full' }, // Spans 2 rows, 3 cols
         ],
-         [
-            { label: '0', action: () => inputDigit('0'), className: 'col-span-2 w-full', width: 'w-auto' }, // Span 2 columns
-            { label: '.', action: inputDecimal, width: 'w-16' },
-            { label: 'EXP', action: () => {}, className: 'bg-muted hover:bg-muted/80', width: 'w-16', disabled: true }, // Placeholder Exponent
-            { label: 'Ans', action: () => {}, className: 'bg-muted hover:bg-muted/80', width: 'w-16', disabled: true }, // Placeholder Answer
+         [ // Row 7 continued
+            { label: '0', action: () => handleButtonClick('0'), className: 'col-span-2 w-full', width: 'w-auto' }, // Span 2 columns
+            { label: '.', action: () => handleButtonClick('.'), width: 'w-auto' },
             // Equals button is in the row above, spanning this row's space
         ],
-
     ];
 
 
     return (
         <div className="flex justify-center items-start py-12 px-4 min-h-screen">
-            <Card className="w-full max-w-lg shadow-2xl rounded-xl overflow-hidden">
+            <Card className="w-full max-w-md shadow-2xl rounded-xl overflow-hidden"> {/* Adjusted max-width */}
                 <CardHeader className="text-center">
                     <CardTitle className="text-2xl flex items-center justify-center gap-2">
                          <CalculatorIcon className="h-6 w-6 text-primary" />
                         Scientific Calculator
                     </CardTitle>
-                    <CardDescription>Perform standard and scientific calculations.</CardDescription>
+                    <CardDescription>Enter an expression and press '='.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 space-y-4">
-                     {/* Display */}
-                     <Input
-                         type="text"
-                         value={display}
-                         readOnly
-                         className="text-right text-3xl h-16 mb-4 bg-muted border-border text-foreground font-mono px-4"
-                         aria-live="polite"
-                         onKeyDown={handleKeyDown} // Add keyboard listener
-                         tabIndex={0} // Make it focusable
-                     />
+                     {/* Display Area */}
+                     <div className="bg-muted rounded-md p-4 border border-input min-h-[6rem] text-right space-y-1">
+                         <Input
+                             type="text"
+                             value={expression}
+                             readOnly // Display only, input via buttons/keyboard
+                             placeholder="Enter expression"
+                             className="text-2xl h-auto bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-foreground font-mono w-full text-right p-0"
+                             aria-label="Calculator expression display"
+                             onKeyDown={handleKeyDown} // Attach keydown listener
+                             tabIndex={0} // Make focusable
+                         />
+                         {/* Result Display */}
+                          <Input
+                             type="text"
+                             value={result}
+                             readOnly
+                             placeholder="Result"
+                             className={`text-xl h-auto bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full text-right p-0 font-semibold ${result.startsWith('Error') ? 'text-destructive' : 'text-primary'}`}
+                             aria-label="Calculator result display"
+                          />
+                    </div>
 
-                     {/* Buttons Grid */}
+
+                     {/* Buttons Grid - Adjusted columns */}
                     <div className="grid grid-cols-6 gap-2">
-                       {buttonRows.flat().map((btn, index) => (
+                        {buttonRows.flat().map((btn, index) => (
                             <Button
                                 key={`${btn.label}-${index}`}
                                 onClick={btn.action}
                                 variant={btn.className?.includes('bg-primary') || btn.className?.includes('bg-destructive') ? 'default' : 'outline'} // Adjust variant based on class
-                                className={`text-lg h-14 ${btn.width || 'w-full'} ${btn.className || ''} ${btn.disabled ? 'opacity-50 cursor-not-allowed' : ''} ${btn.label === '=' ? 'row-span-2 h-full' : ''} ${btn.label === '0' ? 'col-span-2 w-full' : ''}`}
+                                className={cn(
+                                    `text-base sm:text-lg h-14 flex items-center justify-center p-0`, // Base styles
+                                    btn.width || 'w-full', // Width
+                                    btn.className || '', // Custom classes
+                                    btn.disabled ? 'opacity-50 cursor-not-allowed' : '',
+                                     // Handle spans explicitly with grid column classes if needed
+                                     btn.label === '=' ? 'row-span-2 h-full col-span-3' : '',
+                                     btn.label === '0' ? 'col-span-2 w-full' : '',
+                                     (btn.label === '+' || btn.label === '-') ? 'col-span-3 w-full' : '',
+                                     (typeof btn.label !== 'string' && btn.title === 'Backspace') ? 'col-span-1' : '', // Ensure backspace takes one col if others span
+                                     // Default to col-span-1 if not specified otherwise
+                                      !btn.className?.includes('col-span-') && !btn.className?.includes('row-span-') ? 'col-span-1' : ''
+                                )}
                                 disabled={btn.disabled}
-                                // Special handling for multi-slot buttons in CSS grid needed if 'w-auto' or spans are complex
+                                title={typeof btn.label === 'string' ? btn.label : btn.title} // Use title for icon buttons
                             >
                                 {btn.label}
                             </Button>
@@ -356,4 +267,3 @@ const ScientificCalculatorPage: React.FC = () => {
 };
 
 export default ScientificCalculatorPage;
-
