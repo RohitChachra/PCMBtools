@@ -46,7 +46,7 @@ const calculatorCategories: CalculatorCategory[] = [
   {
     id: 'thermochemistry',
     title: 'Thermochemistry',
-    description: 'Calculate heat transfer (q=mcΔT). Enthalpy changes coming soon.',
+    description: 'Calculate heat transfer (q=mcΔT).', // Removed: Enthalpy changes coming soon.
     component: ThermochemistryCalculator,
     icon: Calculator,
   },
@@ -60,7 +60,7 @@ const calculatorCategories: CalculatorCategory[] = [
    {
     id: 'concentration',
     title: 'Concentration',
-    description: 'Calculate Molarity, Molality, and dilutions (M1V1=M2V2). Normality coming soon.',
+    description: 'Calculate Molarity, Molality, and dilutions (M1V1=M2V2).', // Removed: Normality coming soon.
     component: ConcentrationCalculator,
     icon: Calculator,
   },
@@ -74,7 +74,7 @@ const calculatorCategories: CalculatorCategory[] = [
     {
     id: 'ph_poh',
     title: 'pH and pOH',
-    description: "Calculate pH, pOH, [H+], and [OH-]. Assumes strong acids/bases or given concentrations.",
+    description: "Calculate pH, pOH, [H+], and [OH-]. Assumes standard conditions (25°C).", // Updated description slightly
     component: PhPohCalculator,
     icon: Calculator,
   },
@@ -88,21 +88,21 @@ const calculatorCategories: CalculatorCategory[] = [
     {
     id: 'electrochemistry',
     title: 'Electrochemistry',
-    description: 'Calculate cell potential using the Nernst equation (simplified).',
+    description: 'Calculate cell potential using the Nernst equation (simplified Q).', // Adjusted description slightly
     component: ElectrochemistryCalculator,
     icon: Calculator,
   },
   {
     id: 'kinetics',
     title: 'Chemical Kinetics',
-    description: 'Calculate using first-order integrated rate law. Rate law calculations coming soon.',
+    description: 'Calculate using first-order integrated rate law.', // Removed: Rate law calculations coming soon.
     component: ChemicalKineticsCalculator,
     icon: Calculator,
   },
    {
     id: 'equilibrium',
     title: 'Equilibrium Constant',
-    description: 'Calculate Kc using equilibrium concentrations. Assumes simple A + B <=> C + D structure.',
+    description: 'Calculate Kc using equilibrium concentrations. Assumes simple A + B <=> C + D structure.', // Removed: Kp and ICE table calculations coming soon.
     component: EquilibriumConstantCalculator,
     icon: Calculator,
   },
