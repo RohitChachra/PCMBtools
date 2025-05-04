@@ -13,7 +13,6 @@ import { Calculator, Scale } from 'lucide-react'; // Use Scale icon
 import { useToast } from '@/hooks/use-toast';
 import { create, all, type MathJsStatic, type ConfigOptions } from 'mathjs';
 import { cn } from '@/lib/utils';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; // Added import
 
 const math = create(all, { number: 'BigNumber', precision: 10 } as ConfigOptions);
 const R_GAS_CONST = 0.08206; // Ideal gas constant L·atm/(mol·K) for Kp calculations
@@ -27,17 +26,9 @@ const kcSchema = z.object({
     conc_B: z.string().refine(v => !isNaN(parseFloat(v)) && parseFloat(v) > 0, { message: "Reactant concentration must be positive." }),
 });
 
-// Schema for Kp = Kc * (RT)^(Δn)
-const kpFromKcSchema = z.object({
-    kc: z.string().refine(v => !isNaN(parseFloat(v)) && parseFloat(v) >= 0, { message: "Kc must be non-negative." }),
-    temperature_k: z.string().refine(v => !isNaN(parseFloat(v)) && parseFloat(v) > 0, { message: "Temperature (K) must be positive." }),
-    delta_n: z.string().refine(v => !isNaN(parseFloat(v)), { message: "Δn (moles of gas products - moles of gas reactants) must be a number." }),
-});
-
 type KcFormData = z.infer<typeof kcSchema>;
-type KpFromKcFormData = z.infer<typeof kpFromKcSchema>;
 
-type CalcType = 'kc' | 'kp_from_kc';
+type CalcType = 'kc'; // Only Kc calculation remains
 
 interface EquilibriumResult {
     type: CalcType;
@@ -45,87 +36,45 @@ interface EquilibriumResult {
 }
 
 export const EquilibriumConstantCalculator = () => {
-    const [calcType, setCalcType] = useState<CalcType>('kc');
     const [result, setResult] = useState<EquilibriumResult | null>(null);
     const [error, setError] = useState<string | null>(null);
     const { toast } = useToast();
 
-    // Separate form hooks for each calculation type
+    // Only need the form hook for Kc calculation
     const kcForm = useForm<KcFormData>({
         resolver: zodResolver(kcSchema),
         defaultValues: { conc_C: '', conc_D: '', conc_A: '', conc_B: '' },
     });
+    const { control, handleSubmit, formState: { errors } } = kcForm;
 
-    const kpFromKcForm = useForm<KpFromKcFormData>({
-        resolver: zodResolver(kpFromKcSchema),
-        defaultValues: { kc: '', temperature_k: '', delta_n: '' },
-    });
-
-    const handleCalcTypeChange = (value: CalcType) => {
-        setCalcType(value);
-        setResult(null); // Clear results and errors when changing type
-        setError(null);
-        kcForm.reset(); // Reset forms to avoid stale data
-        kpFromKcForm.reset();
-    };
-
-    const onSubmit = (data: any) => {
+    const onSubmit = (data: KcFormData) => {
         setError(null);
         setResult(null);
 
         try {
-            let calculatedValue: math.BigNumber | null = null;
+            const C = math.bignumber(data.conc_C);
+            const D = math.bignumber(data.conc_D);
+            const A = math.bignumber(data.conc_A);
+            const B = math.bignumber(data.conc_B);
 
-            if (calcType === 'kc') {
-                const { conc_C, conc_D, conc_A, conc_B } = data as KcFormData;
-                const C = math.bignumber(conc_C);
-                const D = math.bignumber(conc_D);
-                const A = math.bignumber(conc_A);
-                const B = math.bignumber(conc_B);
+            // Kc = ([C] * [D]) / ([A] * [B])
+            const numerator = math.multiply(C, D);
+            const denominator = math.multiply(A, B);
 
-                // Kc = ([C] * [D]) / ([A] * [B])
-                const numerator = math.multiply(C, D);
-                const denominator = math.multiply(A, B);
-
-                if (math.equal(denominator, 0)) {
-                    throw new Error("Reactant concentrations cannot be zero.");
-                }
-                calculatedValue = math.divide(numerator, denominator);
-                if (math.smaller(calculatedValue, 0)) {
-                    throw new Error("Calculated Kc is negative, check inputs.");
-                }
-
-            } else if (calcType === 'kp_from_kc') {
-                const { kc, temperature_k, delta_n } = data as KpFromKcFormData;
-                const Kc = math.bignumber(kc);
-                const T = math.bignumber(temperature_k);
-                const dn = math.bignumber(delta_n);
-                const R = math.bignumber(R_GAS_CONST);
-
-                // Kp = Kc * (RT)^(Δn)
-                const RT = math.multiply(R, T);
-                 if (math.equal(RT, 0) && math.smaller(dn, 0)) {
-                     throw new Error("Cannot calculate Kp: RT is zero and Δn is negative (division by zero).");
-                 }
-                 // Handle 0^0 which is often defined as 1 in this context
-                 const RT_pow_dn = (math.equal(RT, 0) && math.equal(dn, 0)) ? math.bignumber(1) : math.pow(RT, dn);
-
-                calculatedValue = math.multiply(Kc, RT_pow_dn);
-                 if (math.smaller(calculatedValue, 0)) {
-                     throw new Error("Calculated Kp is negative, check inputs.");
-                 }
+            if (math.equal(denominator, 0)) {
+                throw new Error("Reactant concentrations cannot be zero.");
+            }
+            const calculatedValue = math.divide(numerator, denominator);
+            if (math.smaller(calculatedValue, 0)) {
+                throw new Error("Calculated Kc is negative, check inputs.");
             }
 
-            if (calculatedValue !== null) {
-                const formattedValue = math.format(calculatedValue, { notation: 'fixed', precision: 4 }).replace(/(\.[0-9]*[1-9])0+$|\.0*$/, '$1');
-                setResult({
-                    type: calcType,
-                    value: formattedValue
-                });
-                toast({ title: "Calculation Success", description: `Equilibrium constant (${calcType.toUpperCase()}) calculated.` });
-            } else {
-                throw new Error("Unknown calculation type.");
-            }
+            const formattedValue = math.format(calculatedValue, { notation: 'fixed', precision: 4 }).replace(/(\.[0-9]*[1-9])0+$|\.0*$/, '$1');
+            setResult({
+                type: 'kc',
+                value: formattedValue
+            });
+            toast({ title: "Calculation Success", description: `Equilibrium constant (Kc) calculated.` });
 
         } catch (err: any) {
             setError(`Calculation failed: ${err.message}`);
@@ -133,98 +82,40 @@ export const EquilibriumConstantCalculator = () => {
         }
     };
 
-     // Dynamic form rendering based on calcType
-    const renderFormFields = () => {
-        if (calcType === 'kc') {
-            const { control: kcControl, formState: { errors: kcErrors } } = kcForm;
-            return (
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                     <div className="space-y-1">
-                         <Label htmlFor="conc_C">[C] (Product)</Label>
-                         <Controller name="conc_C" control={kcControl} render={({ field }) => <Input {...field} id="conc_C" type="number" step="any" min="0" placeholder="e.g., 0.5 M" className={cn(kcErrors.conc_C ? 'border-destructive' : '')}/>} />
-                         {kcErrors.conc_C && <p className="text-xs text-destructive">{kcErrors.conc_C.message}</p>}
-                     </div>
-                     <div className="space-y-1">
-                         <Label htmlFor="conc_D">[D] (Product)</Label>
-                         <Controller name="conc_D" control={kcControl} render={({ field }) => <Input {...field} id="conc_D" type="number" step="any" min="0" placeholder="e.g., 0.5 M" className={cn(kcErrors.conc_D ? 'border-destructive' : '')}/>} />
-                          {kcErrors.conc_D && <p className="text-xs text-destructive">{kcErrors.conc_D.message}</p>}
-                      </div>
-                      <div className="space-y-1">
-                         <Label htmlFor="conc_A">[A] (Reactant)</Label>
-                         <Controller name="conc_A" control={kcControl} render={({ field }) => <Input {...field} id="conc_A" type="number" step="any" min="0.000001" placeholder="e.g., 0.1 M" className={cn(kcErrors.conc_A ? 'border-destructive' : '')}/>} />
-                          {kcErrors.conc_A && <p className="text-xs text-destructive">{kcErrors.conc_A.message}</p>}
-                      </div>
-                      <div className="space-y-1">
-                         <Label htmlFor="conc_B">[B] (Reactant)</Label>
-                         <Controller name="conc_B" control={kcControl} render={({ field }) => <Input {...field} id="conc_B" type="number" step="any" min="0.000001" placeholder="e.g., 0.1 M" className={cn(kcErrors.conc_B ? 'border-destructive' : '')}/>} />
-                          {kcErrors.conc_B && <p className="text-xs text-destructive">{kcErrors.conc_B.message}</p>}
-                      </div>
-                 </div>
-            );
-        } else if (calcType === 'kp_from_kc') {
-             // Use kpFromKcForm's control and errors
-             const { control: kpControl, formState: { errors: kpErrors } } = kpFromKcForm;
-            return (
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                     <div className="space-y-1">
-                         <Label htmlFor="kc">K<sub>c</sub> Value</Label>
-                         <Controller name="kc" control={kpControl} render={({ field }) => <Input {...field} id="kc" type="number" step="any" min="0" placeholder="Enter Kc" className={cn(kpErrors.kc ? 'border-destructive' : '')}/>} />
-                         {kpErrors.kc && <p className="text-xs text-destructive">{kpErrors.kc.message}</p>}
-                     </div>
-                     <div className="space-y-1">
-                         <Label htmlFor="temperature_k">Temperature (T)</Label>
-                          <div className="flex items-center gap-2">
-                             <Controller name="temperature_k" control={kpControl} render={({ field }) => <Input {...field} id="temperature_k" type="number" step="any" min="0.01" placeholder="Enter Temp" className={cn(kpErrors.temperature_k ? 'border-destructive' : '', 'flex-grow')}/>} />
-                             <span className="text-sm text-muted-foreground">K</span>
-                          </div>
-                          {kpErrors.temperature_k && <p className="text-xs text-destructive">{kpErrors.temperature_k.message}</p>}
-                     </div>
-                     <div className="space-y-1 sm:col-span-2">
-                         <Label htmlFor="delta_n">Change in Moles of Gas (Δn)</Label>
-                         <Controller name="delta_n" control={kpControl} render={({ field }) => <Input {...field} id="delta_n" type="number" step="any" placeholder="Products(g) - Reactants(g)" className={cn(kpErrors.delta_n ? 'border-destructive' : '')}/>} />
-                         {kpErrors.delta_n && <p className="text-xs text-destructive">{kpErrors.delta_n.message}</p>}
-                          <p className="text-xs text-muted-foreground">Δn = (moles of gaseous products) - (moles of gaseous reactants)</p>
-                     </div>
-                 </div>
-            );
-        }
-        return null;
-    };
-
-    // Use the correct handleSubmit for the form
-    const currentHandleSubmit = calcType === 'kc' ? kcForm.handleSubmit : kpFromKcForm.handleSubmit;
 
   return (
     <Card className="w-full">
       <CardContent className="pt-6">
-        <div className="mb-4">
-          <Label htmlFor="calc-type-select">Calculation Type</Label>
-          <Select onValueChange={handleCalcTypeChange} value={calcType}>
-            <SelectTrigger id="calc-type-select" className="w-full sm:w-[280px]">
-              <SelectValue placeholder="Select calculation..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="kc">Calculate K<sub>c</sub> from Concentrations</SelectItem>
-              <SelectItem value="kp_from_kc">Calculate K<sub>p</sub> from K<sub>c</sub></SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-         {calcType === 'kc' && (
-            <p className="text-sm text-muted-foreground mb-4">
+         {/* Removed the Select component for calculation type */}
+         <p className="text-sm text-muted-foreground mb-4">
                 Calculate K<sub>c</sub> for <code className="font-mono">A + B ⇌ C + D</code>. Enter equilibrium concentrations (mol/L).
-            </p>
-         )}
-          {calcType === 'kp_from_kc' && (
-            <p className="text-sm text-muted-foreground mb-4">
-                Calculate K<sub>p</sub> using <code className="font-mono">K<sub>p</sub> = K<sub>c</sub>(RT)<sup>Δn</sup></code>. Use R ≈ {R_GAS_CONST} L·atm/(mol·K).
-            </p>
-         )}
+         </p>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+             {/* Always render Kc form fields */}
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                 <div className="space-y-1">
+                     <Label htmlFor="conc_C">[C] (Product)</Label>
+                     <Controller name="conc_C" control={control} render={({ field }) => <Input {...field} id="conc_C" type="number" step="any" min="0" placeholder="e.g., 0.5 M" className={cn(errors.conc_C ? 'border-destructive' : '')}/>} />
+                     {errors.conc_C && <p className="text-xs text-destructive">{errors.conc_C.message}</p>}
+                 </div>
+                 <div className="space-y-1">
+                     <Label htmlFor="conc_D">[D] (Product)</Label>
+                     <Controller name="conc_D" control={control} render={({ field }) => <Input {...field} id="conc_D" type="number" step="any" min="0" placeholder="e.g., 0.5 M" className={cn(errors.conc_D ? 'border-destructive' : '')}/>} />
+                      {errors.conc_D && <p className="text-xs text-destructive">{errors.conc_D.message}</p>}
+                  </div>
+                  <div className="space-y-1">
+                     <Label htmlFor="conc_A">[A] (Reactant)</Label>
+                     <Controller name="conc_A" control={control} render={({ field }) => <Input {...field} id="conc_A" type="number" step="any" min="0.000001" placeholder="e.g., 0.1 M" className={cn(errors.conc_A ? 'border-destructive' : '')}/>} />
+                      {errors.conc_A && <p className="text-xs text-destructive">{errors.conc_A.message}</p>}
+                  </div>
+                  <div className="space-y-1">
+                     <Label htmlFor="conc_B">[B] (Reactant)</Label>
+                     <Controller name="conc_B" control={control} render={({ field }) => <Input {...field} id="conc_B" type="number" step="any" min="0.000001" placeholder="e.g., 0.1 M" className={cn(errors.conc_B ? 'border-destructive' : '')}/>} />
+                      {errors.conc_B && <p className="text-xs text-destructive">{errors.conc_B.message}</p>}
+                  </div>
+             </div>
 
-        {/* Pass the correct submit handler */}
-        <form onSubmit={currentHandleSubmit(onSubmit)} className="space-y-4">
-            {renderFormFields()}
-            <Button type="submit" className="w-full sm:w-auto">Calculate {calcType.toUpperCase()}</Button>
+            <Button type="submit" className="w-full sm:w-auto">Calculate K<sub>c</sub></Button>
         </form>
       </CardContent>
 
@@ -243,10 +134,10 @@ export const EquilibriumConstantCalculator = () => {
              <AlertTitle className="text-primary">Calculation Result</AlertTitle>
              <AlertDescription>
                 <p className="mt-2 text-sm font-semibold">
-                   {result.type === 'kc' ? 'Equilibrium Constant (Kc): ' : 'Equilibrium Constant (Kp): '} {result.value}
+                   Equilibrium Constant (K<sub>c</sub>): {result.value}
                 </p>
                  <p className="text-xs text-muted-foreground mt-1">
-                     {result.type === 'kc' ? 'Kc is unitless in this context.' : 'Kp assumes standard pressure units (atm).'}
+                     K<sub>c</sub> is unitless in this context.
                  </p>
              </AlertDescription>
           </Alert>
@@ -255,3 +146,4 @@ export const EquilibriumConstantCalculator = () => {
     </Card>
   );
 };
+

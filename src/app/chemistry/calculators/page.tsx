@@ -22,11 +22,6 @@ import { ElectrochemistryCalculator } from '@/components/chemistry/calculators/E
 import { ChemicalKineticsCalculator } from '@/components/chemistry/calculators/ChemicalKineticsCalculator';
 import { EquilibriumConstantCalculator } from '@/components/chemistry/calculators/EquilibriumConstantCalculator';
 
-
-// Placeholder components for calculators not yet implemented - REMOVED as all are being implemented
-// const ComingSoonCalculator = ({ title }: { title: string }) => <div className="p-4 border rounded bg-muted text-muted-foreground">{title} - Coming Soon!</div>;
-
-
 interface CalculatorCategory {
   id: string;
   title: string;
@@ -95,14 +90,14 @@ const calculatorCategories: CalculatorCategory[] = [
   {
     id: 'kinetics',
     title: 'Chemical Kinetics',
-    description: 'Calculate using first-order integrated rate law.', // Removed: Rate law calculations coming soon.
+    description: 'Calculate using the first-order integrated rate law or the general rate law.',
     component: ChemicalKineticsCalculator,
     icon: Calculator,
   },
    {
     id: 'equilibrium',
-    title: 'Equilibrium Constant',
-    description: 'Calculate Kc from concentrations or Kp from Kc, Temperature, and Δn. Assumes simple A + B <=> C + D structure for Kc.', // Updated description
+    title: 'Equilibrium Constant (Kc)',
+    description: 'Calculate Kc from equilibrium concentrations. Assumes simple A + B <=> C + D structure.', // Updated description
     component: EquilibriumConstantCalculator,
     icon: Calculator,
   },
