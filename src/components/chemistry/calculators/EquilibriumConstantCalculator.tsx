@@ -159,7 +159,7 @@ export const EquilibriumConstantCalculator = () => {
                      <div className="space-y-1">
                          <Label htmlFor="kc">K<sub>c</sub> Value</Label>
                          <Controller name="kc" control={kpFromKcForm.control} render={({ field }) => <Input {...field} id="kc" type="number" step="any" min="0" placeholder="Enter Kc" className={cn(kpFromKcForm.formState.errors.kc ? 'border-destructive' : '')}/>} />
-                         {kpFromKcForm.formState.errors.kc && <p className="text-xs text-destructive">{kpFromKcForm.state.errors.kc.message}</p>}
+                         {kpFromKcForm.formState.errors.kc && <p className="text-xs text-destructive">{kpFromKcForm.formState.errors.kc.message}</p>}
                      </div>
                      <div className="space-y-1">
                          <Label htmlFor="temperature_k">Temperature (T)</Label>
@@ -238,8 +238,6 @@ export const EquilibriumConstantCalculator = () => {
              </AlertDescription>
           </Alert>
         )}
-         {/* Updated note about ICE tables */}
-         <p className="text-xs text-muted-foreground">ICE table calculations involve solving algebraic equations based on initial concentrations and the change variable 'x'. This feature is complex and will be added in a future update.</p>
       </CardFooter>
     </Card>
   );
