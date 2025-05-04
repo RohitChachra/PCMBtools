@@ -1,32 +1,49 @@
 
 'use client';
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Calculator as CalculatorIcon, Delete } from 'lucide-react'; // Using Delete for Backspace
 import { useToast } from '@/hooks/use-toast';
-import { create, all, MathJsStatic } from 'mathjs'; // Import create, all, and MathJsStatic type
+import { create, all, MathJsStatic, ConfigOptions } from 'mathjs'; // Import create, all, MathJsStatic type and ConfigOptions
 import { cn } from '@/lib/utils'; // Import the cn utility function
 
-// Create a mathjs instance
-const math: MathJsStatic = create(all);
-
+// --- Component ---
 const ScientificCalculatorPage: React.FC = () => {
+    // Create a persistent mathjs instance using useRef
+    const mathInstanceRef = useRef<MathJsStatic | null>(null);
     const [expression, setExpression] = useState<string>('');
     const [result, setResult] = useState<string>('');
     const [isRadians, setIsRadians] = useState<boolean>(true); // Default to Radians
     const { toast } = useToast();
 
-    const formatResult = (value: any): string => {
+    // Initialize the mathjs instance on mount
+    useEffect(() => {
+        if (!mathInstanceRef.current) {
+            mathInstanceRef.current = create(all);
+            console.log("Math.js instance created.");
+             // Set initial angle mode on the instance
+            mathInstanceRef.current.config({ angle: isRadians ? 'rad' : 'deg' } as ConfigOptions); // Explicit cast needed
+        }
+    }, [isRadians]); // Re-run if isRadians changes to ensure config is updated (though toggle handles it too)
+
+    const formatResult = useCallback((value: any): string => {
+         // Ensure mathInstanceRef.current exists before using it
+         const math = mathInstanceRef.current;
+         if (!math) return 'Error: Math engine not ready';
         try {
-            // Use math.format for better formatting
+            // Use math.format for better formatting, handle potential Unit objects
+            if (math.isUnit && math.isUnit(value)) { // Check if isUnit exists before calling
+                return value.toString(); // Keep unit formatting
+            }
+            // Existing number formatting
             return math.format(value, { notation: 'fixed', precision: 10 }).replace(/(\.[0-9]*[1-9])0+$|\.0*$/, '$1'); // Remove trailing zeros
         } catch {
             return String(value); // Fallback
         }
-    };
+    }, []); // No dependency on mathInstanceRef needed as ref changes don't trigger re-renders
 
     const handleButtonClick = (value: string) => {
         setResult(''); // Clear previous result on new input
@@ -46,32 +63,48 @@ const ScientificCalculatorPage: React.FC = () => {
     };
 
     const handleEquals = useCallback(() => {
+        // Ensure mathInstanceRef.current exists before using it
+        const math = mathInstanceRef.current;
+        if (!math) {
+            setResult('Error: Math engine not ready');
+            toast({ title: "Error", description: "Calculator engine is initializing, please wait.", variant: "destructive" });
+            return;
+        }
+
         if (!expression.trim()) {
             setResult('');
             return;
         }
 
-        // Store the original configuration
-        const originalConfig = math.config();
+        // Set the angle mode on the *local* instance for this evaluation
+        // (Though toggleRadDeg should keep it in sync)
+        math.config({ angle: isRadians ? 'rad' : 'deg' } as ConfigOptions);
+        console.log('Angle mode for eval:', math.config().angle);
+
         let evalResult: any;
         let formatted = '';
 
         try {
-            // Temporarily set the angle mode for this evaluation on the instance
-            math.config({ angle: isRadians ? 'rad' : 'deg' });
-
-            // Evaluate the expression using the configured instance
+            // Evaluate the expression using the local instance
             evalResult = math.evaluate(expression);
+            console.log('Raw result:', evalResult); // Log raw result
 
             // Handle potential complex results or units if needed in future
             if (typeof evalResult === 'function') {
                 throw new Error("Invalid expression resulting in a function.");
             }
-            if (evalResult === undefined || evalResult === null) {
+            // Check for undefined, null, or plain objects which are usually evaluation errors
+            if (evalResult === undefined || evalResult === null || (typeof evalResult === 'object' && !math.isUnit?.(evalResult) && !Array.isArray(evalResult) && typeof evalResult.toString !== 'function')) {
                  throw new Error("Invalid expression or undefined result.");
             }
 
-            formatted = formatResult(evalResult);
+             // Format based on type
+            if (math.isUnit?.(evalResult)) {
+                formatted = evalResult.toString();
+            } else {
+                formatted = formatResult(evalResult);
+            }
+
             setResult(formatted);
             // Optional: setExpression(formatted); // Replace expression with result after calculation
 
@@ -84,11 +117,11 @@ const ScientificCalculatorPage: React.FC = () => {
                 description: errorMessage,
                 variant: "destructive",
              });
-        } finally {
-             // Restore the original configuration regardless of success or error
-             math.config(originalConfig);
         }
-    }, [expression, isRadians, toast]);
+        // No finally block needed to restore config for local instance,
+        // as toggleRadDeg manages the instance's config state.
+
+    }, [expression, isRadians, toast, formatResult]); // Dependencies are correct
 
     const clearAll = () => {
         setExpression('');
@@ -101,8 +134,19 @@ const ScientificCalculatorPage: React.FC = () => {
     };
 
      const toggleRadDeg = () => {
-        setIsRadians((prevIsRadians) => !prevIsRadians); // Use functional update
-        toast({ title: "Mode Changed", description: `Calculator set to ${!isRadians ? 'Radians' : 'Degrees'}` });
+        const newIsRadians = !isRadians;
+        setIsRadians(newIsRadians); // Use functional update
+
+         // Ensure mathInstanceRef.current exists before configuring it
+        const math = mathInstanceRef.current;
+        if (math) {
+            // Update the config on the local instance
+            math.config({ angle: newIsRadians ? 'rad' : 'deg' } as ConfigOptions);
+            console.log('Angle mode toggled to:', math.config().angle);
+            toast({ title: "Mode Changed", description: `Calculator set to ${newIsRadians ? 'Radians' : 'Degrees'}` });
+        } else {
+             toast({ title: "Error", description: "Calculator engine not ready to change mode.", variant: "destructive" });
+        }
     };
 
 
@@ -281,3 +325,4 @@ const ScientificCalculatorPage: React.FC = () => {
 };
 
 export default ScientificCalculatorPage;
+
