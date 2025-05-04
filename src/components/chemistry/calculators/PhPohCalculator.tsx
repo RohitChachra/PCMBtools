@@ -14,6 +14,7 @@ import { Calculator, TestTube } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { create, all, type MathJsStatic, type ConfigOptions } from 'mathjs';
 import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; // Added import
 
 const math = create(all, { number: 'BigNumber', precision: 10 } as ConfigOptions);
 
