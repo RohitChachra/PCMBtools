@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils'; // Import the cn utility function
 const ScientificCalculatorPage: React.FC = () => {
     const [expression, setExpression] = useState<string>('');
     const [result, setResult] = useState<string>('');
-    const [isRadians, setIsRadians] = useState<boolean>(true);
+    const [isRadians, setIsRadians] = useState<boolean>(true); // Default to Radians
     const { toast } = useToast();
 
     // Configure mathjs instance for potential precision later
@@ -55,27 +55,13 @@ const ScientificCalculatorPage: React.FC = () => {
         }
 
         try {
-            // Configure angle mode for trig functions
-            const scope = {
-               // Define custom functions or override if needed
-            };
-            // Note: math.js v11+ handles angle config differently
-            // math.config({ angle: isRadians ? 'rad' : 'deg' });
-            // For older versions (like v10 or lower), pass config to evaluate:
-            const evalConfig = { angle: isRadians ? 'rad' : 'deg' };
-            // Or use custom parsing/evaluation with the config
+            const parser = math.parser();
+            // Configure angle mode based on state *before* evaluation
+            parser.evaluate(`config({ angle: '${isRadians ? 'rad' : 'deg'}' })`);
 
-            // Simple evaluate (might not respect angle config directly in older mathjs versions unless configured globally or passed)
-             let evalResult: any;
+            let evalResult: any;
             try {
-                 // Attempt evaluation, ensuring angle mode is respected if possible
-                 // With mathjs v11+, global config is preferred.
-                 // Let's assume mathjs version handles scope/config or it's set globally.
-                 // We can create a parser for more control if needed:
-                 // const parser = math.parser();
-                 // parser.evaluate(`config({angle: '${isRadians ? 'rad' : 'deg'}'})`);
-                 // evalResult = parser.evaluate(expression);
-                 evalResult = math.evaluate(expression, scope);
+                 evalResult = parser.evaluate(expression);
              } catch (e) {
                  throw e; // Re-throw evaluation errors
              }
@@ -245,7 +231,11 @@ const ScientificCalculatorPage: React.FC = () => {
                              value={result}
                              readOnly
                              placeholder="Result"
-                             className={`text-2xl h-auto bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full text-right p-0 font-semibold ${result.startsWith('Error') ? 'text-destructive' : 'text-primary'}`} // Changed text-xl to text-2xl
+                             // Increased font size to text-3xl
+                             className={cn(
+                                 'text-3xl h-auto bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full text-right p-0 font-semibold',
+                                 result.startsWith('Error') ? 'text-destructive' : 'text-primary'
+                              )}
                              aria-label="Calculator result display"
                           />
                     </div>
@@ -286,4 +276,3 @@ const ScientificCalculatorPage: React.FC = () => {
 
 export default ScientificCalculatorPage;
 
-    
