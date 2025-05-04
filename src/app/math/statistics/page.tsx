@@ -469,7 +469,7 @@ export default function StatisticsPage() {
                               <Plus className="h-4 w-4 mr-1" /> Add Row
                             </Button>
                         </TableCell>
-                         <TableCell className="text-right"></TableCell> {/* Empty cell for alignment */}
+                        <TableCell className="text-right"></TableCell> {/* Empty cell for alignment */}
                     </TableRow>
                 </UiTableFooter>
             </Table>
@@ -624,3 +624,5 @@ export default function StatisticsPage() {
     </div>
   );
 }
+
+    
