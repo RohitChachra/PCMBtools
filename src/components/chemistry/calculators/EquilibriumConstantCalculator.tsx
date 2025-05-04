@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState } from 'react';
@@ -10,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { Calculator, Scale } from 'lucide-react';
+import { Calculator, Scale } from 'lucide-react'; // Use Scale icon
 import { useToast } from '@/hooks/use-toast';
 import { create, all, type MathJsStatic, type ConfigOptions } from 'mathjs';
 import { cn } from '@/lib/utils';
@@ -160,7 +159,7 @@ export const EquilibriumConstantCalculator = () => {
                      <div className="space-y-1">
                          <Label htmlFor="kc">K<sub>c</sub> Value</Label>
                          <Controller name="kc" control={kpFromKcForm.control} render={({ field }) => <Input {...field} id="kc" type="number" step="any" min="0" placeholder="Enter Kc" className={cn(kpFromKcForm.formState.errors.kc ? 'border-destructive' : '')}/>} />
-                         {kpFromKcForm.formState.errors.kc && <p className="text-xs text-destructive">{kpFromKcForm.formState.errors.kc.message}</p>}
+                         {kpFromKcForm.formState.errors.kc && <p className="text-xs text-destructive">{kpFromKcForm.state.errors.kc.message}</p>}
                      </div>
                      <div className="space-y-1">
                          <Label htmlFor="temperature_k">Temperature (T)</Label>
@@ -239,9 +238,9 @@ export const EquilibriumConstantCalculator = () => {
              </AlertDescription>
           </Alert>
         )}
-         <p className="text-xs text-muted-foreground">ICE table calculations coming soon.</p>
+         {/* Updated note about ICE tables */}
+         <p className="text-xs text-muted-foreground">ICE table calculations involve solving algebraic equations based on initial concentrations and the change variable 'x'. This feature is complex and will be added in a future update.</p>
       </CardFooter>
     </Card>
   );
 };
-
