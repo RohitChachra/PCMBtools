@@ -10,17 +10,33 @@ import {
 } from "@/components/ui/accordion";
 import { Calculator } from 'lucide-react'; // Use a general calculator icon
 
-// Placeholder components for each calculator category
-const MoleConceptCalculator = () => <div className="p-4 border rounded bg-muted text-muted-foreground">Mole Concept Calculator - Coming Soon!</div>;
-const ThermochemistryCalculator = () => <div className="p-4 border rounded bg-muted text-muted-foreground">Thermochemistry Calculator - Coming Soon!</div>;
-const GasLawsCalculator = () => <div className="p-4 border rounded bg-muted text-muted-foreground">Gas Laws Calculator - Coming Soon!</div>;
-const ConcentrationCalculator = () => <div className="p-4 border rounded bg-muted text-muted-foreground">Concentration Calculator - Coming Soon!</div>;
-const StoichiometryCalculator = () => <div className="p-4 border rounded bg-muted text-muted-foreground">Stoichiometry Calculator - Coming Soon!</div>;
-const PhPohCalculator = () => <div className="p-4 border rounded bg-muted text-muted-foreground">pH & pOH Calculator - Coming Soon!</div>;
-const EmpiricalMolecularFormulaCalculator = () => <div className="p-4 border rounded bg-muted text-muted-foreground">Empirical & Molecular Formula Calculator - Coming Soon!</div>;
-const ElectrochemistryCalculator = () => <div className="p-4 border rounded bg-muted text-muted-foreground">Electrochemistry Calculator - Coming Soon!</div>;
-const ChemicalKineticsCalculator = () => <div className="p-4 border rounded bg-muted text-muted-foreground">Chemical Kinetics Calculator - Coming Soon!</div>;
-const EquilibriumConstantCalculator = () => <div className="p-4 border rounded bg-muted text-muted-foreground">Equilibrium Constant Calculator - Coming Soon!</div>;
+// Import the actual calculator components
+import { MoleConceptCalculator } from '@/components/chemistry/calculators/MoleConceptCalculator';
+// ... import other calculator components when they are created ...
+// Example imports (assuming they exist later):
+// import { ThermochemistryCalculator } from '@/components/chemistry/calculators/ThermochemistryCalculator';
+// import { GasLawsCalculator } from '@/components/chemistry/calculators/GasLawsCalculator';
+// import { ConcentrationCalculator } from '@/components/chemistry/calculators/ConcentrationCalculator';
+// import { StoichiometryCalculator } from '@/components/chemistry/calculators/StoichiometryCalculator';
+// import { PhPohCalculator } from '@/components/chemistry/calculators/PhPohCalculator';
+// import { EmpiricalMolecularFormulaCalculator } from '@/components/chemistry/calculators/EmpiricalMolecularFormulaCalculator';
+// import { ElectrochemistryCalculator } from '@/components/chemistry/calculators/ElectrochemistryCalculator';
+// import { ChemicalKineticsCalculator } from '@/components/chemistry/calculators/ChemicalKineticsCalculator';
+// import { EquilibriumConstantCalculator } from '@/components/chemistry/calculators/EquilibriumConstantCalculator';
+
+
+// Placeholder components for calculators not yet implemented
+const ComingSoonCalculator = ({ title }: { title: string }) => <div className="p-4 border rounded bg-muted text-muted-foreground">{title} - Coming Soon!</div>;
+
+const ThermochemistryCalculator = () => <ComingSoonCalculator title="Thermochemistry Calculator" />;
+const GasLawsCalculator = () => <ComingSoonCalculator title="Gas Laws Calculator" />;
+const ConcentrationCalculator = () => <ComingSoonCalculator title="Concentration Calculator" />;
+const StoichiometryCalculator = () => <ComingSoonCalculator title="Stoichiometry Calculator" />;
+const PhPohCalculator = () => <ComingSoonCalculator title="pH & pOH Calculator" />;
+const EmpiricalMolecularFormulaCalculator = () => <ComingSoonCalculator title="Empirical & Molecular Formula Calculator" />;
+const ElectrochemistryCalculator = () => <ComingSoonCalculator title="Electrochemistry Calculator" />;
+const ChemicalKineticsCalculator = () => <ComingSoonCalculator title="Chemical Kinetics Calculator" />;
+const EquilibriumConstantCalculator = () => <ComingSoonCalculator title="Equilibrium Constant Calculator" />;
 
 
 interface CalculatorCategory {
@@ -35,8 +51,8 @@ const calculatorCategories: CalculatorCategory[] = [
   {
     id: 'mole_concept',
     title: 'Mole Concept',
-    description: 'Convert between moles, mass, particles, and volume (at STP).',
-    component: MoleConceptCalculator,
+    description: 'Convert between moles, mass, particles, and volume (at STP). Enter formula and one quantity.',
+    component: MoleConceptCalculator, // Use the implemented component
     icon: Calculator,
   },
   {
