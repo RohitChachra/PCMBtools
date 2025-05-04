@@ -7,8 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Calculator as CalculatorIcon, Delete } from 'lucide-react'; // Using Delete for Backspace
 import { useToast } from '@/hooks/use-toast';
-import * as math from 'mathjs';
+import { create, all } from 'mathjs'; // Import create and all
 import { cn } from '@/lib/utils'; // Import the cn utility function
+
+// Create a mathjs instance
+const math = create(all);
 
 const ScientificCalculatorPage: React.FC = () => {
     const [expression, setExpression] = useState<string>('');
@@ -16,15 +19,9 @@ const ScientificCalculatorPage: React.FC = () => {
     const [isRadians, setIsRadians] = useState<boolean>(true); // Default to Radians
     const { toast } = useToast();
 
-    // Configure mathjs instance for potential precision later
-    // const mathInstance = math.create(math.all, {
-    //   number: 'BigNumber', // Use BigNumber for higher precision
-    //   precision: 64
-    // });
-
     const formatResult = (value: any): string => {
         try {
-            // Use math.format for better formatting, especially for BigNumbers if used
+            // Use math.format for better formatting
             return math.format(value, { notation: 'fixed', precision: 10 }).replace(/(\.[0-9]*[1-9])0+$|\.0*$/, '$1'); // Remove trailing zeros
         } catch {
             return String(value); // Fallback
@@ -55,16 +52,25 @@ const ScientificCalculatorPage: React.FC = () => {
         }
 
         try {
-            const parser = math.parser();
-            // Configure angle mode based on state *before* evaluation
-            parser.evaluate(`config({ angle: '${isRadians ? 'rad' : 'deg'}' })`);
+            // Define scope for evaluation, including angle mode
+            const scope = {
+                 config: { angle: isRadians ? 'rad' : 'deg' }
+            };
 
             let evalResult: any;
-            try {
-                 evalResult = parser.evaluate(expression);
+             try {
+                 // Evaluate the expression using the local math instance and scope
+                 evalResult = math.evaluate(expression, scope);
              } catch (e) {
-                 throw e; // Re-throw evaluation errors
+                  // Catch specific mathjs evaluation errors if needed, otherwise re-throw
+                  if (e instanceof Error && e.message.includes("Invalid expression")) {
+                      throw new Error("Invalid mathematical expression.");
+                  } else if (e instanceof Error && e.message.includes("Undefined symbol")) {
+                     throw new Error(`Undefined symbol used in expression: ${e.message.split(':')[1]?.trim() || ''}`);
+                  }
+                 throw e; // Re-throw other evaluation errors
              }
+
 
             // Handle potential complex results or units if needed in future
             if (typeof evalResult === 'function') {
@@ -107,7 +113,12 @@ const ScientificCalculatorPage: React.FC = () => {
 
     // Handle keyboard input for better UX
     const handleKeyDown = (event: React.KeyboardEvent) => {
-        event.preventDefault(); // Prevent default input behavior sometimes
+        // Allow default behavior for some keys like arrows, Tab, etc.
+        if (!['0','1','2','3','4','5','6','7','8','9','.','+','-','*','/','^','(',')','Enter','=','Backspace','Escape','p','e','s','c','t','l','n','!','%','r','q'].includes(event.key.toLowerCase()) && !event.ctrlKey) {
+             return; // Let the browser handle other keys
+        }
+
+        event.preventDefault(); // Prevent default for keys we handle
         const { key } = event;
 
         if (/\d/.test(key)) {
@@ -276,3 +287,4 @@ const ScientificCalculatorPage: React.FC = () => {
 
 export default ScientificCalculatorPage;
 
+    
