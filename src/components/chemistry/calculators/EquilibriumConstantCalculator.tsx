@@ -63,7 +63,8 @@ export const EquilibriumConstantCalculator = () => {
 
     // Determine which form hook to use based on the selected calculation type
     const activeForm = calcType === 'kc' ? kcForm : kpFromKcForm;
-    const { control, handleSubmit, formState: { errors } } = activeForm;
+    // We still need handleSubmit from the active form for the form onSubmit prop
+    const { handleSubmit } = activeForm;
 
     const handleCalcTypeChange = (value: CalcType) => {
         setCalcType(value);
@@ -140,50 +141,54 @@ export const EquilibriumConstantCalculator = () => {
      // Dynamic form rendering based on calcType
     const renderFormFields = () => {
         if (calcType === 'kc') {
+            // Explicitly use kcForm's control and errors
+            const { control: kcControl, formState: { errors: kcErrors } } = kcForm;
             return (
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                      <div className="space-y-1">
                          <Label htmlFor="conc_C">[C] (Product)</Label>
-                         <Controller name="conc_C" control={control} render={({ field }) => <Input {...field} id="conc_C" type="number" step="any" min="0" placeholder="e.g., 0.5 M" className={cn(errors.conc_C ? 'border-destructive' : '')}/>} />
-                         {errors.conc_C && <p className="text-xs text-destructive">{(errors.conc_C as any).message}</p>}
+                         <Controller name="conc_C" control={kcControl} render={({ field }) => <Input {...field} id="conc_C" type="number" step="any" min="0" placeholder="e.g., 0.5 M" className={cn(kcErrors.conc_C ? 'border-destructive' : '')}/>} />
+                         {kcErrors.conc_C && <p className="text-xs text-destructive">{kcErrors.conc_C.message}</p>}
                      </div>
                      <div className="space-y-1">
                          <Label htmlFor="conc_D">[D] (Product)</Label>
-                         <Controller name="conc_D" control={control} render={({ field }) => <Input {...field} id="conc_D" type="number" step="any" min="0" placeholder="e.g., 0.5 M" className={cn(errors.conc_D ? 'border-destructive' : '')}/>} />
-                          {errors.conc_D && <p className="text-xs text-destructive">{(errors.conc_D as any).message}</p>}
+                         <Controller name="conc_D" control={kcControl} render={({ field }) => <Input {...field} id="conc_D" type="number" step="any" min="0" placeholder="e.g., 0.5 M" className={cn(kcErrors.conc_D ? 'border-destructive' : '')}/>} />
+                          {kcErrors.conc_D && <p className="text-xs text-destructive">{kcErrors.conc_D.message}</p>}
                       </div>
                       <div className="space-y-1">
                          <Label htmlFor="conc_A">[A] (Reactant)</Label>
-                         <Controller name="conc_A" control={control} render={({ field }) => <Input {...field} id="conc_A" type="number" step="any" min="0.000001" placeholder="e.g., 0.1 M" className={cn(errors.conc_A ? 'border-destructive' : '')}/>} />
-                          {errors.conc_A && <p className="text-xs text-destructive">{(errors.conc_A as any).message}</p>}
+                         <Controller name="conc_A" control={kcControl} render={({ field }) => <Input {...field} id="conc_A" type="number" step="any" min="0.000001" placeholder="e.g., 0.1 M" className={cn(kcErrors.conc_A ? 'border-destructive' : '')}/>} />
+                          {kcErrors.conc_A && <p className="text-xs text-destructive">{kcErrors.conc_A.message}</p>}
                       </div>
                       <div className="space-y-1">
                          <Label htmlFor="conc_B">[B] (Reactant)</Label>
-                         <Controller name="conc_B" control={control} render={({ field }) => <Input {...field} id="conc_B" type="number" step="any" min="0.000001" placeholder="e.g., 0.1 M" className={cn(errors.conc_B ? 'border-destructive' : '')}/>} />
-                          {errors.conc_B && <p className="text-xs text-destructive">{(errors.conc_B as any).message}</p>}
+                         <Controller name="conc_B" control={kcControl} render={({ field }) => <Input {...field} id="conc_B" type="number" step="any" min="0.000001" placeholder="e.g., 0.1 M" className={cn(kcErrors.conc_B ? 'border-destructive' : '')}/>} />
+                          {kcErrors.conc_B && <p className="text-xs text-destructive">{kcErrors.conc_B.message}</p>}
                       </div>
                  </div>
             );
         } else if (calcType === 'kp_from_kc') {
+             // Explicitly use kpFromKcForm's control and errors
+             const { control: kpControl, formState: { errors: kpErrors } } = kpFromKcForm;
             return (
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                      <div className="space-y-1">
                          <Label htmlFor="kc">K<sub>c</sub> Value</Label>
-                         <Controller name="kc" control={control} render={({ field }) => <Input {...field} id="kc" type="number" step="any" min="0" placeholder="Enter Kc" className={cn(errors.kc ? 'border-destructive' : '')}/>} />
-                         {errors.kc && <p className="text-xs text-destructive">{(errors.kc as any).message}</p>}
+                         <Controller name="kc" control={kpControl} render={({ field }) => <Input {...field} id="kc" type="number" step="any" min="0" placeholder="Enter Kc" className={cn(kpErrors.kc ? 'border-destructive' : '')}/>} />
+                         {kpErrors.kc && <p className="text-xs text-destructive">{kpErrors.kc.message}</p>}
                      </div>
                      <div className="space-y-1">
                          <Label htmlFor="temperature_k">Temperature (T)</Label>
                           <div className="flex items-center gap-2">
-                             <Controller name="temperature_k" control={control} render={({ field }) => <Input {...field} id="temperature_k" type="number" step="any" min="0.01" placeholder="Enter Temp" className={cn(errors.temperature_k ? 'border-destructive' : '', 'flex-grow')}/>} />
+                             <Controller name="temperature_k" control={kpControl} render={({ field }) => <Input {...field} id="temperature_k" type="number" step="any" min="0.01" placeholder="Enter Temp" className={cn(kpErrors.temperature_k ? 'border-destructive' : '', 'flex-grow')}/>} />
                              <span className="text-sm text-muted-foreground">K</span>
                           </div>
-                          {errors.temperature_k && <p className="text-xs text-destructive">{(errors.temperature_k as any).message}</p>}
+                          {kpErrors.temperature_k && <p className="text-xs text-destructive">{kpErrors.temperature_k.message}</p>}
                      </div>
                      <div className="space-y-1 sm:col-span-2">
                          <Label htmlFor="delta_n">Change in Moles of Gas (Δn)</Label>
-                         <Controller name="delta_n" control={control} render={({ field }) => <Input {...field} id="delta_n" type="number" step="any" placeholder="Products(g) - Reactants(g)" className={cn(errors.delta_n ? 'border-destructive' : '')}/>} />
-                         {errors.delta_n && <p className="text-xs text-destructive">{(errors.delta_n as any).message}</p>}
+                         <Controller name="delta_n" control={kpControl} render={({ field }) => <Input {...field} id="delta_n" type="number" step="any" placeholder="Products(g) - Reactants(g)" className={cn(kpErrors.delta_n ? 'border-destructive' : '')}/>} />
+                         {kpErrors.delta_n && <p className="text-xs text-destructive">{kpErrors.delta_n.message}</p>}
                           <p className="text-xs text-muted-foreground">Δn = (moles of gaseous products) - (moles of gaseous reactants)</p>
                      </div>
                  </div>
