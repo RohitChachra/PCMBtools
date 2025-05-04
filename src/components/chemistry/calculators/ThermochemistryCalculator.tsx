@@ -246,11 +246,10 @@ export const ThermochemistryCalculator = () => {
              </AlertDescription>
           </Alert>
         )}
-         {/* Note about ΔH calculations */}
-         <p className="text-xs text-muted-foreground">Enthalpy change (ΔH) calculations often require additional context like reaction stoichiometry or standard enthalpy data.</p>
+         {/* Note about ΔH calculations - REMOVED */}
+         {/* <p className="text-xs text-muted-foreground">Enthalpy change (ΔH) calculations often require additional context like reaction stoichiometry or standard enthalpy data.</p> */}
+         <p className="text-xs text-muted-foreground">Further calculations (ΔH, unit conversions) coming soon.</p>
       </CardFooter>
     </Card>
   );
 };
-
-    
