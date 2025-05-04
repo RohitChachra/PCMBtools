@@ -19,8 +19,9 @@ import { WavesSoundCalculators } from '@/components/physics/waves-sound';
 import { CurrentElectricityCalculators } from '@/components/physics/current-electricity';
 import { OpticsCalculators } from '@/components/physics/optics';
 import { MagnetismCalculators } from '@/components/physics/magnetism';
+import { FluidDynamicsCalculators } from '@/components/physics/fluid-dynamics'; // Import Fluid Dynamics
 import UnitConverterPage from './unit-converter/page'; // Import the UnitConverter component
-import { ArrowRightLeft } from 'lucide-react'; // Import icon for converter
+import { ArrowRightLeft, Waves } from 'lucide-react'; // Import icon for converter and Fluid Dynamics
 
 interface CalculatorCategory {
   id: string;
@@ -80,6 +81,13 @@ const calculatorCategories: CalculatorCategory[] = [
     description: 'Calculate heat transfer, ideal gas properties, and efficiency.',
     component: ThermodynamicsCalculators,
   },
+  { // Add Fluid Dynamics
+    id: 'fluid_dynamics',
+    title: 'Fluid Dynamics',
+    description: 'Calculate density, pressure, buoyant force, and flow rate.',
+    component: FluidDynamicsCalculators,
+    icon: Waves, // Use Waves icon
+  },
    {
     id: 'waves_sound',
     title: 'Waves and Sound',
@@ -134,3 +142,4 @@ export default function PhysicsPage() {
     </div>
   );
 }
+
