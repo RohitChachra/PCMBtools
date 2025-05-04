@@ -36,7 +36,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from '@/components/ui/chart';
 import { Bar, BarChart, Line, LineChart, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
-import { mean, median, mode, std, variance, range, max, min } from 'mathjs';
+import { mean, median, mode, std, variance, max, min } from 'mathjs'; // Removed 'range', added 'max', 'min'
 import { Calculator, BarChart3, LineChartIcon, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -138,11 +138,12 @@ export default function StatisticsPage() {
       const calculatedMean = mean(values);
       const calculatedMedian = median(values);
       const calculatedMode = mode(values); // Can return multiple modes
-      const calculatedRange = range(values);
-      const calculatedStdDev = std(values, 'unbiased'); // Sample standard deviation
-      const calculatedVariance = variance(values, 'unbiased'); // Sample variance
       const calculatedMax = max(values);
       const calculatedMin = min(values);
+      // Correctly calculate statistical range (max - min)
+      const calculatedRange = calculatedMax - calculatedMin;
+      const calculatedStdDev = std(values, 'unbiased'); // Sample standard deviation
+      const calculatedVariance = variance(values, 'unbiased'); // Sample variance
 
 
       setDiscreteResults({
