@@ -7,11 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Calculator as CalculatorIcon, Delete } from 'lucide-react'; // Using Delete for Backspace
 import { useToast } from '@/hooks/use-toast';
-import { create, all } from 'mathjs'; // Import create and all
+import { create, all, MathJsStatic } from 'mathjs'; // Import create, all, and MathJsStatic type
 import { cn } from '@/lib/utils'; // Import the cn utility function
 
 // Create a mathjs instance
-const math = create(all);
+const math: MathJsStatic = create(all); // Use the correct type
 
 const ScientificCalculatorPage: React.FC = () => {
     const [expression, setExpression] = useState<string>('');
@@ -51,14 +51,16 @@ const ScientificCalculatorPage: React.FC = () => {
             return;
         }
 
-        const originalConfig = math.config(); // Store original config
+        // Store the original configuration
+        const originalConfig = math.config();
         let evalResult: any;
         let formatted = '';
 
         try {
-            // Temporarily set angle mode for this calculation
+            // Temporarily set the angle mode for this evaluation
             math.config({ angle: isRadians ? 'rad' : 'deg' });
 
+            // Evaluate the expression using the configured instance
             evalResult = math.evaluate(expression);
 
             // Handle potential complex results or units if needed in future
@@ -83,7 +85,8 @@ const ScientificCalculatorPage: React.FC = () => {
                 variant: "destructive",
              });
         } finally {
-             math.config(originalConfig); // Restore original config regardless of success or error
+             // Restore the original configuration regardless of success or error
+             math.config(originalConfig);
         }
     }, [expression, isRadians, toast]);
 
@@ -119,7 +122,7 @@ const ScientificCalculatorPage: React.FC = () => {
         } else if (key === '+' || key === '-' || key === '*' || key === '/' || key === '^') {
             handleButtonClick(key);
         } else if (key === '(' || key === ')') {
-            handleButtonClick(')');
+            handleButtonClick(key); // Corrected to handle both parentheses
         } else if (key === 'Enter' || key === '=') {
             handleEquals();
         } else if (key === 'Backspace') {
@@ -277,3 +280,5 @@ const ScientificCalculatorPage: React.FC = () => {
 };
 
 export default ScientificCalculatorPage;
+
+    
