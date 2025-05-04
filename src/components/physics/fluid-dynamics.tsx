@@ -45,7 +45,7 @@ export function FluidDynamicsCalculators() {
       <CalculatorCard
         // Use dangerouslySetInnerHTML for the subscript in title/labels if needed, or simplify
         title="Buoyant Force"
-        description="Calculate the buoyant force (F<sub>B</sub>) on a submerged object."
+        description="Calculate the buoyant force (F<sub class=\"text-[0.6em] align-baseline\">B</sub>) on a submerged object."
         inputFields={[
           { name: 'rho_fluid', label: 'Fluid Density (ρ<sub class=\"text-[0.6em] align-baseline\">fluid</sub>)', unit: 'kg/m³' }, // Density must be non-negative
           { name: 'V_submerged', label: 'Submerged Volume (V<sub class=\"text-[0.6em] align-baseline\">sub</sub>)', unit: 'm³' }, // Volume must be positive
