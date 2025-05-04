@@ -12,32 +12,19 @@ import { Calculator } from 'lucide-react'; // Use a general calculator icon
 
 // Import the actual calculator components
 import { MoleConceptCalculator } from '@/components/chemistry/calculators/MoleConceptCalculator';
-import { ThermochemistryCalculator } from '@/components/chemistry/calculators/ThermochemistryCalculator'; // Import the real component
-// ... import other calculator components when they are created ...
-// Example imports (assuming they exist later):
-// import { GasLawsCalculator } from '@/components/chemistry/calculators/GasLawsCalculator';
-// import { ConcentrationCalculator } from '@/components/chemistry/calculators/ConcentrationCalculator';
-// import { StoichiometryCalculator } from '@/components/chemistry/calculators/StoichiometryCalculator';
-// import { PhPohCalculator } from '@/components/chemistry/calculators/PhPohCalculator';
-// import { EmpiricalMolecularFormulaCalculator } from '@/components/chemistry/calculators/EmpiricalMolecularFormulaCalculator';
-// import { ElectrochemistryCalculator } from '@/components/chemistry/calculators/ElectrochemistryCalculator';
-// import { ChemicalKineticsCalculator } from '@/components/chemistry/calculators/ChemicalKineticsCalculator';
-// import { EquilibriumConstantCalculator } from '@/components/chemistry/calculators/EquilibriumConstantCalculator';
+import { ThermochemistryCalculator } from '@/components/chemistry/calculators/ThermochemistryCalculator';
+import { GasLawsCalculator } from '@/components/chemistry/calculators/GasLawsCalculator';
+import { ConcentrationCalculator } from '@/components/chemistry/calculators/ConcentrationCalculator';
+import { StoichiometryCalculator } from '@/components/chemistry/calculators/StoichiometryCalculator';
+import { PhPohCalculator } from '@/components/chemistry/calculators/PhPohCalculator';
+import { EmpiricalMolecularFormulaCalculator } from '@/components/chemistry/calculators/EmpiricalMolecularFormulaCalculator';
+import { ElectrochemistryCalculator } from '@/components/chemistry/calculators/ElectrochemistryCalculator';
+import { ChemicalKineticsCalculator } from '@/components/chemistry/calculators/ChemicalKineticsCalculator';
+import { EquilibriumConstantCalculator } from '@/components/chemistry/calculators/EquilibriumConstantCalculator';
 
 
-// Placeholder components for calculators not yet implemented
-const ComingSoonCalculator = ({ title }: { title: string }) => <div className="p-4 border rounded bg-muted text-muted-foreground">{title} - Coming Soon!</div>;
-
-// Remove placeholder for Thermochemistry
-// const ThermochemistryCalculator = () => <ComingSoonCalculator title="Thermochemistry Calculator" />;
-const GasLawsCalculator = () => <ComingSoonCalculator title="Gas Laws Calculator" />;
-const ConcentrationCalculator = () => <ComingSoonCalculator title="Concentration Calculator" />;
-const StoichiometryCalculator = () => <ComingSoonCalculator title="Stoichiometry Calculator" />;
-const PhPohCalculator = () => <ComingSoonCalculator title="pH & pOH Calculator" />;
-const EmpiricalMolecularFormulaCalculator = () => <ComingSoonCalculator title="Empirical & Molecular Formula Calculator" />;
-const ElectrochemistryCalculator = () => <ComingSoonCalculator title="Electrochemistry Calculator" />;
-const ChemicalKineticsCalculator = () => <ComingSoonCalculator title="Chemical Kinetics Calculator" />;
-const EquilibriumConstantCalculator = () => <ComingSoonCalculator title="Equilibrium Constant Calculator" />;
+// Placeholder components for calculators not yet implemented - REMOVED as all are being implemented
+// const ComingSoonCalculator = ({ title }: { title: string }) => <div className="p-4 border rounded bg-muted text-muted-foreground">{title} - Coming Soon!</div>;
 
 
 interface CalculatorCategory {
@@ -53,14 +40,14 @@ const calculatorCategories: CalculatorCategory[] = [
     id: 'mole_concept',
     title: 'Mole Concept',
     description: 'Convert between moles, mass, particles, and volume (at STP). Enter formula and one quantity.',
-    component: MoleConceptCalculator, // Use the implemented component
+    component: MoleConceptCalculator,
     icon: Calculator,
   },
   {
     id: 'thermochemistry',
     title: 'Thermochemistry',
-    description: 'Calculate heat transfer (q=mcΔT), enthalpy changes, and reaction heat.',
-    component: ThermochemistryCalculator, // Use the implemented component
+    description: 'Calculate heat transfer (q=mcΔT). Enthalpy changes coming soon.',
+    component: ThermochemistryCalculator,
     icon: Calculator,
   },
   {
@@ -73,7 +60,7 @@ const calculatorCategories: CalculatorCategory[] = [
    {
     id: 'concentration',
     title: 'Concentration',
-    description: 'Calculate Molarity, Molality, Normality, and dilutions (M1V1=M2V2).',
+    description: 'Calculate Molarity, Molality, and dilutions (M1V1=M2V2). Normality coming soon.',
     component: ConcentrationCalculator,
     icon: Calculator,
   },
@@ -87,7 +74,7 @@ const calculatorCategories: CalculatorCategory[] = [
     {
     id: 'ph_poh',
     title: 'pH and pOH',
-    description: "Calculate pH, pOH, [H+], and [OH-].",
+    description: "Calculate pH, pOH, [H+], and [OH-]. Assumes strong acids/bases or given concentrations.",
     component: PhPohCalculator,
     icon: Calculator,
   },
@@ -101,21 +88,21 @@ const calculatorCategories: CalculatorCategory[] = [
     {
     id: 'electrochemistry',
     title: 'Electrochemistry',
-    description: 'Calculations using the Nernst equation and standard cell potentials.',
+    description: 'Calculate cell potential using the Nernst equation (simplified).',
     component: ElectrochemistryCalculator,
     icon: Calculator,
   },
   {
     id: 'kinetics',
     title: 'Chemical Kinetics',
-    description: 'Calculate reaction rates using rate laws and integrated rate laws (e.g., first-order).',
+    description: 'Calculate using first-order integrated rate law. Rate law calculations coming soon.',
     component: ChemicalKineticsCalculator,
     icon: Calculator,
   },
    {
     id: 'equilibrium',
     title: 'Equilibrium Constant',
-    description: 'Calculate Kc or Kp using equilibrium concentrations or partial pressures.',
+    description: 'Calculate Kc using equilibrium concentrations. Assumes simple A + B <=> C + D structure.',
     component: EquilibriumConstantCalculator,
     icon: Calculator,
   },
