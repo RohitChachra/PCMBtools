@@ -24,7 +24,7 @@ const molaritySchema = z.object({
     soluteMoles: z.string().optional(),
     soluteMass: z.string().optional(),
     formula: z.string().optional(), // Required if using mass
-    solutionVolumeL: z.string().refine(v => !v || (parseFloat(v) > 0), { message: 'Volume must be positive.' }),
+    solutionVolumeL: z.string().optional().refine(v => !v || (parseFloat(v) > 0), { message: 'Volume must be positive.' }), // Optional here, checked in submit logic
 }).refine(data => (data.soluteMass && !data.formula) ? false : true, {
     message: 'Chemical formula required when using solute mass.', path: ['formula']
 }).refine(data => !!data.soluteMoles !== !!data.soluteMass, { // XOR: exactly one of moles or mass must be provided
@@ -35,7 +35,7 @@ const molalitySchema = z.object({
     soluteMoles: z.string().optional(),
     soluteMass: z.string().optional(),
     formula: z.string().optional(), // Required if using mass
-    solventMassKg: z.string().refine(v => !v || (parseFloat(v) > 0), { message: 'Solvent mass must be positive.' }),
+    solventMassKg: z.string().optional().refine(v => !v || (parseFloat(v) > 0), { message: 'Solvent mass must be positive.' }), // Optional here, checked in submit logic
 }).refine(data => (data.soluteMass && !data.formula) ? false : true, {
     message: 'Chemical formula required when using solute mass.', path: ['formula']
 }).refine(data => !!data.soluteMoles !== !!data.soluteMass, {
@@ -49,7 +49,10 @@ const dilutionSchema = z.object({
 }).refine(data => Object.values(data).filter(v => v && v !== '').length === 3, {
     message: 'Provide exactly 3 values for dilution calculation.',
     path: ['m1']
-});
+}).refine(data => !data.m1 || parseFloat(data.m1) > 0, { message: "M1 must be positive.", path: ['m1']})
+  .refine(data => !data.v1 || parseFloat(data.v1) > 0, { message: "V1 must be positive.", path: ['v1']})
+  .refine(data => !data.m2 || parseFloat(data.m2) > 0, { message: "M2 must be positive.", path: ['m2']})
+  .refine(data => !data.v2 || parseFloat(data.v2) > 0, { message: "V2 must be positive.", path: ['v2']});
 
 
 type MolarityFormData = z.infer<typeof molaritySchema>;
@@ -87,19 +90,31 @@ export const ConcentrationCalculator = () => {
 
             if (calcType === 'molarity') {
                 const { soluteMoles, soluteMass, formula, solutionVolumeL } = data as MolarityFormData;
-                const V = math.bignumber(solutionVolumeL);
+
+                // Specific check: If using mass/formula, volume is mandatory
+                if ((soluteMass || formula) && (!solutionVolumeL || solutionVolumeL.trim() === '' || parseFloat(solutionVolumeL) <= 0)) {
+                    throw new Error("Provide a positive Solution Volume (L).");
+                }
+                // Specific check: If using moles, volume is mandatory
+                 if (soluteMoles && (!solutionVolumeL || solutionVolumeL.trim() === '' || parseFloat(solutionVolumeL) <= 0)) {
+                     throw new Error("Provide a positive Solution Volume (L).");
+                 }
+
+
+                const V = math.bignumber(solutionVolumeL!); // Can use ! because we checked above
                 let n_solute: math.BigNumber;
 
                 if (soluteMoles) {
                     n_solute = math.bignumber(soluteMoles);
-                } else { // soluteMass must be present
+                } else { // soluteMass and formula must be present due to schema/checks
                     const molarMass = calculateMolarMass(formula!);
                     if (molarMass === null) throw new Error("Invalid formula or molar mass calculation failed.");
                     n_solute = math.divide(math.bignumber(soluteMass!), math.bignumber(molarMass));
                 }
 
                  if (math.smallerEq(n_solute, 0)) throw new Error("Solute amount must be positive.");
-                 if (math.smallerEq(V, 0)) throw new Error("Solution volume must be positive.");
+                 // V check is redundant here due to above specific checks, but harmless
+                 // if (math.smallerEq(V, 0)) throw new Error("Solution volume must be positive.");
 
 
                 calculatedValue = math.divide(n_solute, V);
@@ -108,7 +123,17 @@ export const ConcentrationCalculator = () => {
 
             } else if (calcType === 'molality') {
                 const { soluteMoles, soluteMass, formula, solventMassKg } = data as MolalityFormData;
-                const solventMass = math.bignumber(solventMassKg);
+
+                 // Specific check: If using mass/formula, solvent mass is mandatory
+                if ((soluteMass || formula) && (!solventMassKg || solventMassKg.trim() === '' || parseFloat(solventMassKg) <= 0)) {
+                    throw new Error("Provide a positive Solvent Mass (kg).");
+                }
+                 // Specific check: If using moles, solvent mass is mandatory
+                 if (soluteMoles && (!solventMassKg || solventMassKg.trim() === '' || parseFloat(solventMassKg) <= 0)) {
+                     throw new Error("Provide a positive Solvent Mass (kg).");
+                 }
+
+                const solventMass = math.bignumber(solventMassKg!); // Can use ! because we checked above
                 let n_solute: math.BigNumber;
 
                 if (soluteMoles) {
@@ -120,7 +145,8 @@ export const ConcentrationCalculator = () => {
                 }
 
                  if (math.smallerEq(n_solute, 0)) throw new Error("Solute amount must be positive.");
-                 if (math.smallerEq(solventMass, 0)) throw new Error("Solvent mass must be positive.");
+                 // solventMass check is redundant here due to above specific checks
+                 // if (math.smallerEq(solventMass, 0)) throw new Error("Solvent mass must be positive.");
 
 
                 calculatedValue = math.divide(n_solute, solventMass);
@@ -132,19 +158,27 @@ export const ConcentrationCalculator = () => {
                 const M1 = m1 ? math.bignumber(m1) : null; const V1 = v1 ? math.bignumber(v1) : null;
                 const M2 = m2 ? math.bignumber(m2) : null; const V2 = v2 ? math.bignumber(v2) : null;
 
-                 // Validate positive values
-                [M1, V1, M2, V2].forEach((val, index) => {
-                    if (val && math.smallerEq(val, 0)) {
-                        const names = ['M1', 'V1', 'M2', 'V2'];
-                        throw new Error(`${names[index]} must be positive.`);
-                    }
-                });
+                 // Validation for positive values already in Zod schema
 
-
-                if (!M1) { calculatedValue = math.divide(math.multiply(M2!, V2!), V1!); resultLabel = 'Initial Molarity (M₁)'; resultUnit = 'mol/L'; }
-                else if (!V1) { calculatedValue = math.divide(math.multiply(M2!, V2!), M1!); resultLabel = 'Initial Volume (V₁)'; resultUnit = 'L'; }
-                else if (!M2) { calculatedValue = math.divide(math.multiply(M1!, V1!), V2!); resultLabel = 'Final Molarity (M₂)'; resultUnit = 'mol/L'; }
-                else if (!V2) { calculatedValue = math.divide(math.multiply(M1!, V1!), M2!); resultLabel = 'Final Volume (V₂)'; resultUnit = 'L'; }
+                if (!M1) {
+                    if (!M2 || !V2 || !V1) throw new Error("Missing required inputs for M1 calculation.");
+                    calculatedValue = math.divide(math.multiply(M2, V2), V1);
+                    resultLabel = 'Initial Molarity (M₁)'; resultUnit = 'mol/L';
+                } else if (!V1) {
+                    if (!M2 || !V2 || !M1) throw new Error("Missing required inputs for V1 calculation.");
+                    calculatedValue = math.divide(math.multiply(M2, V2), M1);
+                    resultLabel = 'Initial Volume (V₁)'; resultUnit = 'L';
+                } else if (!M2) {
+                     if (!M1 || !V1 || !V2) throw new Error("Missing required inputs for M2 calculation.");
+                    calculatedValue = math.divide(math.multiply(M1, V1), V2);
+                    resultLabel = 'Final Molarity (M₂)'; resultUnit = 'mol/L';
+                } else if (!V2) {
+                     if (!M1 || !V1 || !M2) throw new Error("Missing required inputs for V2 calculation.");
+                    calculatedValue = math.divide(math.multiply(M1, V1), M2);
+                    resultLabel = 'Final Volume (V₂)'; resultUnit = 'L';
+                } else {
+                     throw new Error("Calculation error in dilution formula."); // Should be caught by Zod refinement
+                 }
             }
 
 
@@ -156,7 +190,8 @@ export const ConcentrationCalculator = () => {
                  setResult(`${resultLabel}: ${formattedResult} ${resultUnit}`);
                  toast({ title: "Calculation Success", description: `Calculated ${resultLabel}.` });
             } else {
-                 throw new Error("Could not determine variable to calculate.");
+                 // This should ideally be caught by Zod or earlier specific checks
+                 throw new Error("Could not determine variable to calculate or missing required inputs.");
             }
 
         } catch (err: any) {
@@ -195,6 +230,8 @@ export const ConcentrationCalculator = () => {
                <div className="space-y-1">
                 <Label htmlFor="soluteMolesMolarity">Solute Moles (n)</Label>
                 <Controller name="soluteMoles" control={molarityForm.control} render={({ field }) => <Input {...field} id="soluteMolesMolarity" type="number" step="any" min="0" placeholder="Enter moles" disabled={!!watchMolarityFields[1]} className={cn(errors.soluteMoles ? 'border-destructive' : '')} />} />
+                 {/* Display refinement error */}
+                {errors.soluteMoles?.type === 'custom' && <p className="text-xs text-destructive">{errors.soluteMoles.message}</p>}
               </div>
                <div className="space-y-1">
                 <Label htmlFor="soluteMassMolarity">Solute Mass (m)</Label>
@@ -210,8 +247,6 @@ export const ConcentrationCalculator = () => {
                 <Controller name="solutionVolumeL" control={molarityForm.control} render={({ field }) => <Input {...field} id="solutionVolumeL" type="number" step="any" min="0.000001" placeholder="Enter volume (L)" className={cn(errors.solutionVolumeL ? 'border-destructive' : '')}/>} />
                  {errors.solutionVolumeL && <p className="text-xs text-destructive">{errors.solutionVolumeL.message}</p>}
               </div>
-                 {/* Display refinement error */}
-                {errors.soluteMoles?.type === 'custom' && <p className="text-xs text-destructive col-span-1 sm:col-span-2">{errors.soluteMoles.message}</p>}
             </div>
           )}
 
@@ -221,6 +256,8 @@ export const ConcentrationCalculator = () => {
                 <div className="space-y-1">
                  <Label htmlFor="soluteMolesMolality">Solute Moles (n)</Label>
                  <Controller name="soluteMoles" control={molalityForm.control} render={({ field }) => <Input {...field} id="soluteMolesMolality" type="number" step="any" min="0" placeholder="Enter moles" disabled={!!watchMolalityFields[1]} className={cn(molalityForm.formState.errors.soluteMoles ? 'border-destructive' : '')} />} />
+                  {/* Display refinement error */}
+                  {molalityForm.formState.errors.soluteMoles?.type === 'custom' && <p className="text-xs text-destructive">{molalityForm.formState.errors.soluteMoles.message}</p>}
                </div>
                 <div className="space-y-1">
                  <Label htmlFor="soluteMassMolality">Solute Mass (m)</Label>
@@ -236,7 +273,6 @@ export const ConcentrationCalculator = () => {
                  <Controller name="solventMassKg" control={molalityForm.control} render={({ field }) => <Input {...field} id="solventMassKg" type="number" step="any" min="0.000001" placeholder="Enter mass (kg)" className={cn(molalityForm.formState.errors.solventMassKg ? 'border-destructive' : '')}/>} />
                   {molalityForm.formState.errors.solventMassKg && <p className="text-xs text-destructive">{molalityForm.formState.errors.solventMassKg.message}</p>}
                </div>
-                  {molalityForm.formState.errors.soluteMoles?.type === 'custom' && <p className="text-xs text-destructive col-span-1 sm:col-span-2">{molalityForm.formState.errors.soluteMoles.message}</p>}
              </div>
           )}
 
@@ -253,8 +289,11 @@ export const ConcentrationCalculator = () => {
                        <Input {...controllerField} id={field} type="number" step="any" min="0.000001" placeholder={`Enter ${field.toUpperCase()}`} className={cn(dilutionForm.formState.errors[field] || dilutionForm.formState.errors.m1?.type === 'custom' ? 'border-destructive' : '')} />
                      )}
                    />
+                    {/* Individual field errors */}
+                     {dilutionForm.formState.errors[field] && <p className="text-xs text-destructive">{dilutionForm.formState.errors[field]?.message}</p>}
                  </div>
                ))}
+                 {/* Refinement error */}
                  {dilutionForm.formState.errors.m1?.type === 'custom' && <p className="text-xs text-destructive col-span-1 sm:col-span-2">{dilutionForm.formState.errors.m1.message}</p>}
              </div>
           )}
