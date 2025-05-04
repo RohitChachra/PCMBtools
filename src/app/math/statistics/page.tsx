@@ -71,6 +71,19 @@ interface ContinuousResults {
   totalFrequency: number;
 }
 
+// Type for chart data points
+interface DiscreteChartPoint {
+    value: number;
+    frequency: number;
+}
+
+interface ContinuousChartPoint {
+    midpoint: number;
+    frequency: number;
+    interval: string; // Keep interval for tooltip
+}
+
+
 const chartConfigDiscrete: ChartConfig = {
     frequency: {
       label: 'Frequency',
@@ -78,6 +91,7 @@ const chartConfigDiscrete: ChartConfig = {
     },
 } satisfies ChartConfig;
 
+// Chart config for Frequency Polygon (Line Chart)
 const chartConfigContinuous: ChartConfig = {
     frequency: {
       label: 'Frequency',
@@ -94,8 +108,8 @@ export default function StatisticsPage() {
   ]);
   const [discreteResults, setDiscreteResults] = useState<DiscreteResults | null>(null);
   const [continuousResults, setContinuousResults] = useState<ContinuousResults | null>(null);
-  const [discreteChartData, setDiscreteChartData] = useState<any[]>([]);
-  const [continuousChartData, setContinuousChartData] = useState<any[]>([]);
+  const [discreteChartData, setDiscreteChartData] = useState<DiscreteChartPoint[]>([]);
+  const [continuousChartData, setContinuousChartData] = useState<ContinuousChartPoint[]>([]);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -149,7 +163,8 @@ export default function StatisticsPage() {
       setDiscreteResults({
         mean: calculatedMean.toFixed(4),
         median: calculatedMedian.toFixed(4),
-        mode: Array.isArray(calculatedMode) ? calculatedMode.map(m => m.toFixed(4)).join(', ') : calculatedMode.toFixed(4), // Format mode nicely
+        // Format mode nicely: if single value, show it; if multiple, join with comma; if no mode (e.g., [1, 2, 3]), say 'None'
+        mode: Array.isArray(calculatedMode) ? (calculatedMode.length > 0 ? calculatedMode.map(m => m.toFixed(4)).join(', ') : 'None') : calculatedMode.toFixed(4),
         range: calculatedRange.toFixed(4),
         stdDev: calculatedStdDev.toFixed(4),
         variance: calculatedVariance.toFixed(4),
@@ -207,6 +222,7 @@ export default function StatisticsPage() {
     const midpoints: number[] = [];
     const frequencies: number[] = [];
     const intervals: string[] = [];
+    const chartDataForPolygon: ContinuousChartPoint[] = []; // For the line chart
 
     let previousUpper = -Infinity; // To check for gaps/overlap
 
@@ -250,12 +266,32 @@ export default function StatisticsPage() {
 
         cumulativeFreq += freq;
         cumulativeFrequencyTable.push({ interval: intervalLabel, cf: cumulativeFreq });
+
+        // Add data point for frequency polygon chart
+        chartDataForPolygon.push({ midpoint, frequency: freq, interval: intervalLabel });
     }
 
     if (totalFrequency === 0) {
         setError('Invalid input: Total frequency cannot be zero.');
         return;
     }
+
+    // Sort chart data by midpoint for the line chart
+    chartDataForPolygon.sort((a, b) => a.midpoint - b.midpoint);
+
+    // Optionally add points at zero frequency for the start and end of the polygon
+    // This depends on the exact desired visual representation
+    // const firstMidpoint = chartDataForPolygon[0]?.midpoint;
+    // const lastMidpoint = chartDataForPolygon[chartDataForPolygon.length - 1]?.midpoint;
+    // const firstIntervalWidth = parseFloat(continuousData[0]?.upper) - parseFloat(continuousData[0]?.lower);
+    // const lastIntervalWidth = parseFloat(continuousData[continuousData.length - 1]?.upper) - parseFloat(continuousData[continuousData.length - 1]?.lower);
+    // if (firstMidpoint !== undefined && !isNaN(firstIntervalWidth)) {
+    //     chartDataForPolygon.unshift({ midpoint: firstMidpoint - firstIntervalWidth, frequency: 0, interval: 'Start' });
+    // }
+    // if (lastMidpoint !== undefined && !isNaN(lastIntervalWidth)) {
+    //     chartDataForPolygon.push({ midpoint: lastMidpoint + lastIntervalWidth, frequency: 0, interval: 'End' });
+    // }
+
 
     try {
         const groupedMean = sumFx / totalFrequency;
@@ -278,8 +314,12 @@ export default function StatisticsPage() {
             const L = parseFloat(medianClass.lower);
             const fm = parseInt(medianClass.frequency, 10);
             const C = parseFloat(medianClass.upper) - L; // Class width
-            groupedMedian = L + ((medianPosition - cfBeforeMedianClass) / fm) * C;
-             groupedMedian = groupedMedian.toFixed(4); // Format
+            if (fm === 0) { // Avoid division by zero if median class frequency is 0
+                groupedMedian = "Median cannot be determined (frequency is zero in median class).";
+            } else {
+                groupedMedian = L + ((medianPosition - cfBeforeMedianClass) / fm) * C;
+                groupedMedian = groupedMedian.toFixed(4); // Format
+            }
         }
 
         // Mode Calculation (using modal class)
@@ -295,54 +335,65 @@ export default function StatisticsPage() {
         const modeCounts = frequencies.filter(f => f === maxFreq).length;
         let groupedMode: number | string = 'N/A';
 
-        if (modeCounts === 1 || frequencies.length === 1) { // Handle single mode or single class
+        if (maxFreq === 0) { // If all frequencies are 0
+            groupedMode = "Mode cannot be determined (all frequencies are zero).";
+        } else if (modeCounts === 1 || frequencies.length === 1) { // Handle single mode or single class
              const modalClass = continuousData[modalClassIndex];
              const L = parseFloat(modalClass.lower);
-             const fm = frequencies[modalClassIndex];
+             const fm = frequencies[modalClassIndex]; // Frequency of modal class
              const f1 = modalClassIndex > 0 ? frequencies[modalClassIndex - 1] : 0; // Freq before
              const f2 = modalClassIndex < frequencies.length - 1 ? frequencies[modalClassIndex + 1] : 0; // Freq after
              const C = parseFloat(modalClass.upper) - L; // Class width
 
-             if (fm + (fm - f1) + (fm - f2) === 0) { // Avoid division by zero if denominator is zero
-                  groupedMode = "Mode cannot be determined (division by zero likely)";
+             const denominator = (fm - f1) + (fm - f2);
+
+             if (denominator === 0) { // Avoid division by zero
+                  // Could happen if fm=f1=f2 or if fm=f1 and it's the last class, etc.
+                  // A simpler approach might be to just report the modal class interval
+                  groupedMode = `Modal class: ${L}-${L+C}`; // Report modal class interval instead
              } else {
-                  // Check if modal class is first or last, simplifying the formula slightly
-                  if (modalClassIndex === 0) {
-                    // If first class is modal, technically f1 is 0
-                    groupedMode = L + ((fm - 0) / ((fm - 0) + (fm - f2))) * C;
-                  } else if (modalClassIndex === frequencies.length - 1) {
-                     // If last class is modal, technically f2 is 0
-                     groupedMode = L + ((fm - f1) / ((fm - f1) + (fm - 0))) * C;
-                  } else {
-                      groupedMode = L + ((fm - f1) / ((fm - f1) + (fm - f2))) * C;
-                  }
+                 groupedMode = L + ((fm - f1) / denominator) * C;
                  groupedMode = groupedMode.toFixed(4); // Format
              }
          } else {
-             groupedMode = "Multimodal or Uniform (formula requires single peak)";
+             groupedMode = "Multimodal or Uniform";
          }
 
 
         // Standard Deviation and Variance
-        const varianceVal = (sumFx2 - (sumFx * sumFx) / totalFrequency) / (totalFrequency - 1); // Sample variance
-        const stdDevVal = Math.sqrt(varianceVal);
+        // Ensure totalFrequency > 1 for sample variance/stddev
+        let varianceVal: number | string = 'N/A';
+        let stdDevVal: number | string = 'N/A';
+        if (totalFrequency > 1) {
+            const calculatedVar = (sumFx2 - (sumFx * sumFx) / totalFrequency) / (totalFrequency - 1); // Sample variance
+             if (calculatedVar < 0 && Math.abs(calculatedVar) < 1e-9) {
+                 // Handle tiny negative values due to floating point errors
+                 varianceVal = 0;
+                 stdDevVal = 0;
+             } else if (calculatedVar < 0) {
+                 varianceVal = "Invalid (Negative Variance)";
+                 stdDevVal = "Invalid";
+             } else {
+                varianceVal = calculatedVar.toFixed(4);
+                stdDevVal = Math.sqrt(calculatedVar).toFixed(4);
+             }
+        } else if (totalFrequency === 1) {
+             varianceVal = '0.0000'; // Variance/StdDev is 0 for a single data point/group
+             stdDevVal = '0.0000';
+        }
+
 
         setContinuousResults({
             groupedMean: groupedMean.toFixed(4),
             groupedMedian: groupedMedian,
             groupedMode: groupedMode,
-            stdDev: stdDevVal.toFixed(4),
-            variance: varianceVal.toFixed(4),
+            stdDev: stdDevVal,
+            variance: varianceVal,
             cumulativeFrequency: cumulativeFrequencyTable,
             totalFrequency: totalFrequency
         });
 
-        // Prepare chart data for histogram
-        const chartData = continuousData.map((row, index) => ({
-            interval: `${row.lower}-${row.upper}`,
-            frequency: parseInt(row.frequency, 10) || 0,
-        }));
-        setContinuousChartData(chartData);
+        setContinuousChartData(chartDataForPolygon); // Set data for frequency polygon
 
         toast({ title: "Calculation Success", description: "Continuous statistics calculated." });
 
@@ -469,7 +520,7 @@ export default function StatisticsPage() {
                               <Plus className="h-4 w-4 mr-1" /> Add Row
                             </Button>
                         </TableCell>
-                        <TableCell className="text-right"></TableCell> {/* Empty cell for alignment */}
+                        <TableCell className="text-right" /> {/* Empty cell for alignment */}
                     </TableRow>
                 </UiTableFooter>
             </Table>
@@ -494,38 +545,46 @@ export default function StatisticsPage() {
             <CardTitle className="flex items-center gap-2"><LineChartIcon className="h-5 w-5 text-primary" />Discrete Data Results</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Table>
-              <TableBody>
-                <TableRow>
-                  <TableCell className="font-medium">Count (n)</TableCell>
-                  <TableCell>{discreteResults.count}</TableCell>
-                  <TableCell className="font-medium">Mean</TableCell>
-                  <TableCell>{discreteResults.mean}</TableCell>
-                </TableRow>
-                 <TableRow>
-                  <TableCell className="font-medium">Median</TableCell>
-                  <TableCell>{discreteResults.median}</TableCell>
-                  <TableCell className="font-medium">Mode(s)</TableCell>
-                  <TableCell>{discreteResults.mode}</TableCell>
-                </TableRow>
-                 <TableRow>
-                  <TableCell className="font-medium">Range</TableCell>
-                  <TableCell>{discreteResults.range}</TableCell>
-                   <TableCell className="font-medium">Minimum</TableCell>
-                  <TableCell>{discreteResults.min}</TableCell>
-                </TableRow>
-                 <TableRow>
-                   <TableCell className="font-medium">Maximum</TableCell>
-                  <TableCell>{discreteResults.max}</TableCell>
-                  <TableCell className="font-medium">Variance (Sample)</TableCell>
-                  <TableCell>{discreteResults.variance}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">Standard Deviation (Sample)</TableCell>
-                  <TableCell colSpan={3}>{discreteResults.stdDev}</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
+             {/* Use divs for vertical stacking on mobile */}
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+                 <div className="sm:col-span-1">
+                     <p className="font-medium">Count (n)</p>
+                     <p>{discreteResults.count}</p>
+                 </div>
+                 <div className="sm:col-span-1">
+                     <p className="font-medium">Mean</p>
+                     <p>{discreteResults.mean}</p>
+                 </div>
+                 <div className="sm:col-span-1">
+                     <p className="font-medium">Median</p>
+                     <p>{discreteResults.median}</p>
+                 </div>
+                 <div className="sm:col-span-1">
+                     <p className="font-medium">Mode(s)</p>
+                     <p>{discreteResults.mode}</p>
+                 </div>
+                 <div className="sm:col-span-1">
+                     <p className="font-medium">Range</p>
+                     <p>{discreteResults.range}</p>
+                 </div>
+                 <div className="sm:col-span-1">
+                     <p className="font-medium">Minimum</p>
+                     <p>{discreteResults.min}</p>
+                 </div>
+                 <div className="sm:col-span-1">
+                     <p className="font-medium">Maximum</p>
+                     <p>{discreteResults.max}</p>
+                 </div>
+                 <div className="sm:col-span-1">
+                     <p className="font-medium">Variance (Sample)</p>
+                     <p>{discreteResults.variance}</p>
+                 </div>
+                 <div className="sm:col-span-2"> {/* Span full width on small screens if needed */}
+                     <p className="font-medium">Standard Deviation (Sample)</p>
+                     <p>{discreteResults.stdDev}</p>
+                 </div>
+             </div>
+
 
              {/* Discrete Chart */}
              {discreteChartData.length > 0 && (
@@ -534,11 +593,31 @@ export default function StatisticsPage() {
                   <ChartContainer config={chartConfigDiscrete} className="h-[300px] w-full">
                      <LineChart data={discreteChartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="value" name="Value" />
+                          {/* Ensure XAxis treats values as numbers for proper sorting */}
+                          <XAxis dataKey="value" type="number" name="Value" domain={['dataMin', 'dataMax']} />
                           <YAxis allowDecimals={false} name="Frequency"/>
-                          <RechartsTooltip content={<ChartTooltipContent />} />
+                           {/* Custom Tooltip to show Value and Frequency */}
+                           <RechartsTooltip content={({ active, payload, label }) => {
+                              if (active && payload && payload.length) {
+                                return (
+                                  <div className="rounded-lg border bg-background p-2 shadow-sm">
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div className="flex flex-col">
+                                        <span className="text-[0.70rem] uppercase text-muted-foreground">Value</span>
+                                        <span className="font-bold text-muted-foreground">{label}</span>
+                                      </div>
+                                      <div className="flex flex-col">
+                                        <span className="text-[0.70rem] uppercase text-muted-foreground">Frequency</span>
+                                        <span className="font-bold">{payload[0].value}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}/>
                           <Legend />
-                          <Line type="monotone" dataKey="frequency" stroke="var(--color-frequency)" strokeWidth={2} dot={true} />
+                          <Line type="monotone" dataKey="frequency" stroke="var(--color-frequency)" strokeWidth={2} dot={true} name="Frequency"/>
                       </LineChart>
                    </ChartContainer>
                 </div>
@@ -554,36 +633,42 @@ export default function StatisticsPage() {
             <CardTitle className="flex items-center gap-2"><BarChart3 className="h-5 w-5 text-primary" />Continuous Data Results</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-             {/* Statistics Table */}
-            <div>
-                <h3 className="text-lg font-semibold mb-2">Summary Statistics</h3>
-                <Table>
-                  <TableBody>
-                     <TableRow>
-                       <TableCell className="font-medium">Total Frequency (N)</TableCell>
-                       <TableCell>{continuousResults.totalFrequency}</TableCell>
-                      <TableCell className="font-medium">Grouped Mean</TableCell>
-                      <TableCell>{continuousResults.groupedMean}</TableCell>
-                    </TableRow>
-                     <TableRow>
-                      <TableCell className="font-medium">Grouped Median</TableCell>
-                      <TableCell>{continuousResults.groupedMedian}</TableCell>
-                      <TableCell className="font-medium">Grouped Mode</TableCell>
-                       <TableCell>{continuousResults.groupedMode}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-medium">Variance (Sample)</TableCell>
-                      <TableCell>{continuousResults.variance}</TableCell>
-                       <TableCell className="font-medium">Standard Deviation (Sample)</TableCell>
-                       <TableCell>{continuousResults.stdDev}</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-            </div>
+             {/* Statistics Table - Vertical stack on mobile */}
+             <div>
+                 <h3 className="text-lg font-semibold mb-2">Summary Statistics</h3>
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+                     <div className="sm:col-span-1">
+                         <p className="font-medium">Total Frequency (N)</p>
+                         <p>{continuousResults.totalFrequency}</p>
+                     </div>
+                     <div className="sm:col-span-1">
+                         <p className="font-medium">Grouped Mean</p>
+                         <p>{continuousResults.groupedMean}</p>
+                     </div>
+                     <div className="sm:col-span-1">
+                         <p className="font-medium">Grouped Median</p>
+                         <p>{continuousResults.groupedMedian}</p>
+                     </div>
+                     <div className="sm:col-span-1">
+                         <p className="font-medium">Grouped Mode</p>
+                         <p>{continuousResults.groupedMode}</p>
+                     </div>
+                     <div className="sm:col-span-1">
+                         <p className="font-medium">Variance (Sample)</p>
+                         <p>{continuousResults.variance}</p>
+                     </div>
+                     <div className="sm:col-span-1">
+                         <p className="font-medium">Standard Deviation (Sample)</p>
+                         <p>{continuousResults.stdDev}</p>
+                     </div>
+                 </div>
+             </div>
+
 
              {/* Cumulative Frequency Table */}
              <div>
                  <h3 className="text-lg font-semibold mb-2">Cumulative Frequency</h3>
+                 {/* Table remains as is, might truncate on very small screens */}
                  <Table>
                      <TableHeader>
                          <TableRow>
@@ -602,19 +687,59 @@ export default function StatisticsPage() {
                  </Table>
              </div>
 
-             {/* Continuous Chart (Histogram) */}
+              {/* Continuous Chart (Frequency Polygon - Line Chart) */}
              {continuousChartData.length > 0 && (
                  <div className="mt-6">
-                 <h3 className="text-lg font-semibold mb-2">Histogram</h3>
+                 <h3 className="text-lg font-semibold mb-2">Frequency Polygon</h3>
                   <ChartContainer config={chartConfigContinuous} className="h-[300px] w-full">
-                    <BarChart data={continuousChartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                    <LineChart data={continuousChartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                          <CartesianGrid strokeDasharray="3 3" />
-                         <XAxis dataKey="interval" name="Class Interval"/>
-                         <YAxis allowDecimals={false} name="Frequency"/>
-                         <RechartsTooltip content={<ChartTooltipContent indicator="line" />} />
+                         {/* XAxis uses midpoint, YAxis uses frequency */}
+                         <XAxis
+                           dataKey="midpoint"
+                           type="number"
+                           name="Class Midpoint"
+                           domain={['dataMin', 'dataMax']}
+                           // Optional: Add padding if needed
+                           // padding={{ left: 10, right: 10 }}
+                         />
+                         <YAxis dataKey="frequency" allowDecimals={false} name="Frequency"/>
+                         {/* Custom Tooltip to show Interval and Frequency */}
+                         <RechartsTooltip content={({ active, payload, label }) => {
+                            if (active && payload && payload.length) {
+                              const pointData = payload[0].payload as ContinuousChartPoint; // Get the original data point
+                              return (
+                                <div className="rounded-lg border bg-background p-2 shadow-sm">
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div className="flex flex-col">
+                                      <span className="text-[0.70rem] uppercase text-muted-foreground">Interval</span>
+                                      <span className="font-bold text-muted-foreground">{pointData.interval}</span>
+                                    </div>
+                                     <div className="flex flex-col">
+                                      <span className="text-[0.70rem] uppercase text-muted-foreground">Midpoint</span>
+                                      <span className="font-bold text-muted-foreground">{label}</span>
+                                    </div>
+                                    <div className="flex flex-col col-span-2">
+                                      <span className="text-[0.70rem] uppercase text-muted-foreground">Frequency</span>
+                                      <span className="font-bold">{payload[0].value}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }} />
                          <Legend />
-                         <Bar dataKey="frequency" fill="var(--color-frequency)" radius={4} />
-                     </BarChart>
+                         {/* Line connects frequencies at midpoints */}
+                         <Line
+                           type="monotone"
+                           dataKey="frequency"
+                           stroke="var(--color-frequency)"
+                           strokeWidth={2}
+                           dot={true} // Show dots at midpoints
+                           name="Frequency"
+                          />
+                     </LineChart>
                    </ChartContainer>
                 </div>
              )}
@@ -624,5 +749,3 @@ export default function StatisticsPage() {
     </div>
   );
 }
-
-    
