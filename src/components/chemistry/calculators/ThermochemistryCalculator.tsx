@@ -13,6 +13,9 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Calculator, Thermometer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { create, all, type MathJsStatic, type ConfigOptions } from 'mathjs'; // Import mathjs
+
+const math = create(all, { number: 'BigNumber', precision: 10 } as ConfigOptions);
 
 // Schema for q = mcΔT calculation
 const heatTransferSchema = z.object({
@@ -33,8 +36,12 @@ const heatTransferSchema = z.object({
 type HeatTransferFormData = z.infer<typeof heatTransferSchema>;
 
 interface HeatTransferResult {
-  heatTransferred: number;
+  heatTransferredJoules: string;
+  heatTransferredKcal: string;
+  isHeatAbsorbed?: boolean; // To indicate direction of heat flow
 }
+
+const JOULES_PER_KCAL = 4184;
 
 export const ThermochemistryCalculator = () => {
   const [result, setResult] = useState<HeatTransferResult | null>(null);
@@ -51,24 +58,49 @@ export const ThermochemistryCalculator = () => {
     },
   });
 
+   // Helper to format numbers using mathjs
+   const formatNumber = (num: math.BigNumber | number | undefined): string => {
+    if (num === undefined || num === null || (typeof num === 'number' && isNaN(num))) return 'N/A';
+    try {
+      const bn = math.bignumber(num); // Ensure it's a BigNumber
+      if (math.equal(bn, 0)) return '0';
+      // Use scientific notation for very large or very small non-zero numbers
+      if ((math.abs(bn) >= 1e6 || (math.abs(bn) <= 1e-4 && !math.equal(bn, 0)))) {
+        return math.format(bn, { notation: 'exponential', precision: 5 });
+      }
+      // Use fixed notation with limited precision for others
+      return math.format(bn, { notation: 'fixed', precision: 4 }).replace(/(\.[0-9]*[1-9])0+$|\.0*$/, '$1'); // Remove trailing zeros
+    } catch {
+        return String(num); // Fallback
+    }
+   };
+
+
   const onSubmit = (data: HeatTransferFormData) => {
     setError(null);
     setResult(null);
 
     try {
-      const mass = parseFloat(data.mass);
-      const specificHeat = parseFloat(data.specificHeat);
-      const initialTemp = parseFloat(data.initialTemp);
-      const finalTemp = parseFloat(data.finalTemp);
+      const mass_bn = math.bignumber(data.mass);
+      const specificHeat_bn = math.bignumber(data.specificHeat);
+      const initialTemp_bn = math.bignumber(data.initialTemp);
+      const finalTemp_bn = math.bignumber(data.finalTemp);
 
-      const deltaT = finalTemp - initialTemp;
-      const heatTransferred = mass * specificHeat * deltaT;
+      const deltaT_bn = math.subtract(finalTemp_bn, initialTemp_bn);
+      const heatTransferredJoules_bn = math.multiply(math.multiply(mass_bn, specificHeat_bn), deltaT_bn);
 
-      setResult({ heatTransferred });
+       // Convert Joules to kcal
+       const heatTransferredKcal_bn = math.divide(heatTransferredJoules_bn, JOULES_PER_KCAL);
+
+      setResult({
+          heatTransferredJoules: formatNumber(heatTransferredJoules_bn),
+          heatTransferredKcal: formatNumber(heatTransferredKcal_bn),
+          isHeatAbsorbed: math.larger(heatTransferredJoules_bn, 0) // True if q > 0
+      });
 
       toast({
         title: "Calculation Success",
-        description: `Heat transferred (q) calculated. ${heatTransferred > 0 ? 'Heat absorbed.' : heatTransferred < 0 ? 'Heat released.' : 'No temperature change.'}`
+        description: `Heat transferred (q) calculated. ${math.larger(heatTransferredJoules_bn, 0) ? 'Heat absorbed.' : math.smaller(heatTransferredJoules_bn, 0) ? 'Heat released.' : 'No temperature change.'}`
       });
 
     } catch (err: any) {
@@ -77,15 +109,7 @@ export const ThermochemistryCalculator = () => {
     }
   };
 
-  // Helper to format numbers
-  const formatNumber = (num: number | undefined): string => {
-    if (num === undefined || num === null || isNaN(num)) return 'N/A';
-    if (num === 0) return '0';
-    if (Math.abs(num) >= 1e6 || (Math.abs(num) <= 1e-4 && num !== 0)) {
-      return num.toExponential(4);
-    }
-    return num.toLocaleString(undefined, { maximumFractionDigits: 4 });
-  };
+
 
   return (
     <Card className="w-full">
@@ -210,17 +234,23 @@ export const ThermochemistryCalculator = () => {
              <AlertTitle className="text-primary">Calculation Result</AlertTitle>
              <AlertDescription>
                 <p className="mt-2 text-sm">
-                    Heat Transferred (q): <code className="font-semibold">{formatNumber(result.heatTransferred)} J</code>
+                    Heat Transferred (q):
                 </p>
+                 <ul className="list-disc pl-5 text-sm mt-1">
+                    <li><code className="font-semibold">{result.heatTransferredJoules} J</code></li>
+                    <li><code className="font-semibold">{result.heatTransferredKcal} kcal</code></li>
+                 </ul>
                 <p className="text-xs text-muted-foreground mt-1">
-                    ({result.heatTransferred > 0 ? 'Heat Absorbed' : result.heatTransferred < 0 ? 'Heat Released' : 'No Net Heat Transfer'})
+                    ({result.isHeatAbsorbed === true ? 'Heat Absorbed' : result.isHeatAbsorbed === false ? 'Heat Released' : 'No Net Heat Transfer'})
                 </p>
              </AlertDescription>
           </Alert>
         )}
-         {/* Placeholder for future ΔH and unit conversion features */}
-         <p className="text-xs text-muted-foreground">Further calculations (ΔH, unit conversions) coming soon.</p>
+         {/* Note about ΔH calculations */}
+         <p className="text-xs text-muted-foreground">Enthalpy change (ΔH) calculations often require additional context like reaction stoichiometry or standard enthalpy data.</p>
       </CardFooter>
     </Card>
   );
 };
+
+    
