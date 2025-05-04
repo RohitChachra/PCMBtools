@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { BookOpenText, FlaskConical, Atom, Sigma, Shapes, Calculator as CalculatorIcon, ArrowRightLeft, Microscope, BarChart3 } from 'lucide-react'; // Added BarChart3 for Stats
+import { BookOpenText, FlaskConical, Atom, Sigma, Shapes, Calculator, ArrowRightLeft, Microscope, BarChart3 } from 'lucide-react'; // Added Calculator
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Menu } from 'lucide-react';
@@ -25,15 +25,18 @@ const navItems = [
     href: '/math',
     subItems: [
       { href: '/math/geometry', title: 'Geometry Calculator', description: 'Calculate properties of 2D/3D shapes.', icon: Shapes },
-      { href: '/math/graphing', title: 'Graphing Calculator', description: 'Visualize functions interactively.', icon: CalculatorIcon },
-      { href: '/math/scientific-calculator', title: 'Scientific Calculator', description: 'Perform complex calculations.', icon: Sigma },
-      { href: '/math/statistics', title: 'Statistics Calculator', description: 'Analyze discrete & continuous data.', icon: BarChart3 }, // Added Stats Calc
+      { href: '/math/graphing', title: 'Graphing Calculator', description: 'Visualize functions interactively.', icon: Calculator },
+      { href: '/math/scientific-calculator', title: 'Scientific Calculator', description: 'Perform complex calculations.', icon: Calculator },
+      { href: '/math/statistics', title: 'Statistics Calculator', description: 'Analyze discrete & continuous data.', icon: BarChart3 },
     ],
   },
   {
     trigger: { label: 'Chemistry', icon: FlaskConical },
     href: '/chemistry',
-    // No sub-items currently for Chemistry
+    subItems: [ // Added sub-items for Chemistry
+      { href: '/chemistry/compound-explorer', title: 'Compound Explorer', description: 'Search for chemical compounds.', icon: FlaskConical },
+      { href: '/chemistry/calculators', title: 'Calculator Hub', description: 'Tools for various chemistry calculations.', icon: Calculator },
+    ],
   },
   {
     trigger: { label: 'Physics', icon: Atom },
@@ -105,10 +108,11 @@ export function Header() {
                              </Link>
                          </NavigationMenuTrigger>
                          <NavigationMenuContent>
-                             <ul className="grid w-[450px] gap-3 p-4 md:w-[550px] lg:w-[650px]" style={{ gridTemplateColumns: `repeat(${Math.min(item.subItems.length, 3)}, minmax(0, 1fr))`}}>
+                             {/* Dynamically adjust grid columns based on number of items, max 3 */}
+                             <ul className={cn("grid gap-3 p-4 md:w-[550px] lg:w-[650px]", `md:grid-cols-${Math.min(item.subItems.length, 3)}`)}>
                               {item.subItems.map((subItem) => (
                                 <ListItem
-                                  key={subItem.title}
+                                  key={subItem.href} // Use href as key if title might repeat
                                   title={subItem.title}
                                   href={subItem.href}
                                   icon={subItem.icon}
@@ -148,7 +152,6 @@ export function Header() {
               </Button>
             </SheetTrigger>
             <SheetContent side="right">
-               {/* Added Title and Description for Accessibility */}
                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                <SheetDescription className="sr-only">Main navigation links for PCMBtools</SheetDescription>
               <div className="grid gap-4 py-6">
@@ -172,7 +175,7 @@ export function Header() {
                          <div className="pl-8 pt-2 grid gap-2">
                            {item.subItems.map((subItem) => (
                            <Link
-                           key={subItem.href}
+                           key={subItem.href} // Use href as key
                            href={subItem.href}
                            className="flex items-center gap-2 rounded-md p-2 text-base font-medium text-muted-foreground hover:bg-accent/80 hover:text-accent-foreground"
                           >

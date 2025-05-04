@@ -86,7 +86,6 @@ const calculatorCategories: CalculatorCategory[] = [
     title: 'Fluid Dynamics',
     description: 'Calculate density, pressure, buoyant force, and flow rate.',
     component: FluidDynamicsCalculators,
-    icon: Waves, // Use Waves icon
   },
    {
     id: 'waves_sound',

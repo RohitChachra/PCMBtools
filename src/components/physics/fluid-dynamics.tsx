@@ -46,7 +46,7 @@ export function FluidDynamicsCalculators(): JSX.Element { // Explicit return typ
       <CalculatorCard
         // Pass title with HTML sub tag
         title="Buoyant Force"
-        description="Calculate the buoyant force (F<sub class='text-[0.6em] align-baseline'>B</sub>) on a submerged object."
+        description="Calculate the buoyant force on a submerged object."
         inputFields={[
           // Pass label with HTML sub tag
           { name: 'rho_fluid', label: 'Fluid Density (ρ<sub class="text-[0.6em] align-baseline">fluid</sub>)', unit: 'kg/m³' }, // Density must be non-negative
@@ -69,7 +69,49 @@ export function FluidDynamicsCalculators(): JSX.Element { // Explicit return typ
         }
       />
 
-      {/* Add Continuity Equation (A1v1 = A2v2) and Bernoulli's Principle calculators if desired later */}
+       {/* Continuity Equation Calculator (A1v1 = A2v2) */}
+       <CalculatorCard
+        title="Continuity Equation"
+        description="Calculate the velocity of a fluid in a pipe based on the continuity equation."
+        inputFields={[
+          { name: 'A1', label: 'Area 1 (A₁)', unit: 'm²' },
+          { name: 'v1', label: 'Velocity 1 (v₁)', unit: 'm/s', allowNegative: true },
+          { name: 'A2', label: 'Area 2 (A₂)', unit: 'm²' },
+        ]}
+        formula="A₁v₁ = A₂v₂"
+        calculate={({ A1, v1, A2 }) => {
+          if (A1 <= 0 || A2 <= 0) return "Areas must be positive.";
+          return (A1 * v1) / A2;
+        }}
+        resultLabel="Velocity 2 (v₂)"
+        resultUnit="m/s"
+      />
+
+      {/* Bernoulli's Principle Calculator */}
+      <CalculatorCard
+        title="Bernoulli's Principle"
+        description="Calculate the velocity of a fluid based on Bernoulli's principle."
+        inputFields={[
+          { name: 'P1', label: 'Pressure 1 (P₁)', unit: 'Pa', allowNegative: true },
+          { name: 'v1', label: 'Velocity 1 (v₁)', unit: 'm/s', allowNegative: true },
+          { name: 'P2', label: 'Pressure 2 (P₂)', unit: 'Pa', allowNegative: true },
+        ]}
+        formula="P₁ + 0.5ρv₁² = P₂ + 0.5ρv₂² (where ρ=1000kg/m^3 for water)"
+        calculate={({ P1, v1, P2 }) => {
+          const rho = 1000; // Density of water (kg/m³)
+          const term1 = P1 + 0.5 * rho * v1 * v1;
+          const term2 = P2;
+          const v2Squared = (2 * (term1 - term2)) / rho;
+          if (v2Squared < 0) {
+            return "Result is not a Real number, check your input values."; // Handle negative square root
+          }
+
+          return Math.sqrt(v2Squared);
+
+        }}
+        resultLabel="Velocity 2 (v₂)"
+        resultUnit="m/s"
+      />
     </div>
   );
 }
