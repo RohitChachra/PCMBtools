@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import { create, all, MathJsStatic } from 'mathjs'; // Import create, all, and M
 import { cn } from '@/lib/utils'; // Import the cn utility function
 
 // Create a mathjs instance
-const math: MathJsStatic = create(all); // Use the correct type
+const math: MathJsStatic = create(all);
 
 const ScientificCalculatorPage: React.FC = () => {
     const [expression, setExpression] = useState<string>('');
@@ -57,7 +57,7 @@ const ScientificCalculatorPage: React.FC = () => {
         let formatted = '';
 
         try {
-            // Temporarily set the angle mode for this evaluation
+            // Temporarily set the angle mode for this evaluation on the instance
             math.config({ angle: isRadians ? 'rad' : 'deg' });
 
             // Evaluate the expression using the configured instance
@@ -101,9 +101,10 @@ const ScientificCalculatorPage: React.FC = () => {
     };
 
      const toggleRadDeg = () => {
-        setIsRadians(!isRadians);
-         toast({ title: "Mode Changed", description: `Calculator set to ${!isRadians ? 'Radians' : 'Degrees'}` });
+        setIsRadians((prevIsRadians) => !prevIsRadians); // Use functional update
+        toast({ title: "Mode Changed", description: `Calculator set to ${!isRadians ? 'Radians' : 'Degrees'}` });
     };
+
 
     // Handle keyboard input for better UX
     const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -219,7 +220,7 @@ const ScientificCalculatorPage: React.FC = () => {
                 </CardHeader>
                 <CardContent className="p-4 space-y-4">
                      {/* Display Area */}
-                     <div className="bg-muted rounded-md p-4 border border-input min-h-[6rem] text-right space-y-1 flex flex-col justify-end">
+                     <div className="bg-muted rounded-md p-4 border border-input min-h-[8rem] text-right space-y-1 flex flex-col justify-end">
                          <Input
                              type="text"
                              value={expression}
@@ -280,5 +281,3 @@ const ScientificCalculatorPage: React.FC = () => {
 };
 
 export default ScientificCalculatorPage;
-
-    
