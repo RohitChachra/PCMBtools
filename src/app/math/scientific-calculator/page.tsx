@@ -51,39 +51,28 @@ const ScientificCalculatorPage: React.FC = () => {
             return;
         }
 
+        const originalConfig = math.config(); // Store original config
+        let evalResult: any;
+        let formatted = '';
+
         try {
-            // Define scope for evaluation, including angle mode
-            const scope = {
-                 config: { angle: isRadians ? 'rad' : 'deg' }
-            };
+            // Temporarily set angle mode for this calculation
+            math.config({ angle: isRadians ? 'rad' : 'deg' });
 
-            let evalResult: any;
-             try {
-                 // Evaluate the expression using the local math instance and scope
-                 evalResult = math.evaluate(expression, scope);
-             } catch (e) {
-                  // Catch specific mathjs evaluation errors if needed, otherwise re-throw
-                  if (e instanceof Error && e.message.includes("Invalid expression")) {
-                      throw new Error("Invalid mathematical expression.");
-                  } else if (e instanceof Error && e.message.includes("Undefined symbol")) {
-                     throw new Error(`Undefined symbol used in expression: ${e.message.split(':')[1]?.trim() || ''}`);
-                  }
-                 throw e; // Re-throw other evaluation errors
-             }
-
+            evalResult = math.evaluate(expression);
 
             // Handle potential complex results or units if needed in future
             if (typeof evalResult === 'function') {
                 throw new Error("Invalid expression resulting in a function.");
             }
-             if (evalResult === undefined || evalResult === null) {
+            if (evalResult === undefined || evalResult === null) {
                  throw new Error("Invalid expression or undefined result.");
-             }
+            }
 
-
-            const formatted = formatResult(evalResult);
+            formatted = formatResult(evalResult);
             setResult(formatted);
             // Optional: setExpression(formatted); // Replace expression with result after calculation
+
         } catch (error: any) {
             console.error("Calculation Error:", error);
             const errorMessage = error.message || "Invalid Expression";
@@ -93,6 +82,8 @@ const ScientificCalculatorPage: React.FC = () => {
                 description: errorMessage,
                 variant: "destructive",
              });
+        } finally {
+             math.config(originalConfig); // Restore original config regardless of success or error
         }
     }, [expression, isRadians, toast]);
 
@@ -128,7 +119,7 @@ const ScientificCalculatorPage: React.FC = () => {
         } else if (key === '+' || key === '-' || key === '*' || key === '/' || key === '^') {
             handleButtonClick(key);
         } else if (key === '(' || key === ')') {
-            handleButtonClick(key);
+            handleButtonClick(')');
         } else if (key === 'Enter' || key === '=') {
             handleEquals();
         } else if (key === 'Backspace') {
@@ -231,7 +222,7 @@ const ScientificCalculatorPage: React.FC = () => {
                              value={expression}
                              readOnly // Display only, input via buttons/keyboard
                              placeholder="Enter expression"
-                             className="text-xl h-auto bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-foreground font-mono w-full text-right p-0 mb-1" // Adjusted size and margin
+                             className="text-xl md:text-2xl h-auto bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 text-foreground font-mono w-full text-right p-0 mb-1" // Adjusted size
                              aria-label="Calculator expression display"
                              onKeyDown={handleKeyDown} // Attach keydown listener
                              tabIndex={0} // Make focusable
@@ -242,9 +233,9 @@ const ScientificCalculatorPage: React.FC = () => {
                              value={result}
                              readOnly
                              placeholder="Result"
-                             // Increased font size to text-3xl
+                             // Increased font size to text-3xl, and text-4xl on medium screens and up
                              className={cn(
-                                 'text-3xl h-auto bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full text-right p-0 font-semibold',
+                                 'text-3xl md:text-4xl h-auto bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full text-right p-0 font-semibold',
                                  result.startsWith('Error') ? 'text-destructive' : 'text-primary'
                               )}
                              aria-label="Calculator result display"
@@ -286,5 +277,3 @@ const ScientificCalculatorPage: React.FC = () => {
 };
 
 export default ScientificCalculatorPage;
-
-    
