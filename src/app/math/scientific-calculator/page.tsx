@@ -16,18 +16,17 @@ const ScientificCalculatorPage: React.FC = () => {
     const mathInstanceRef = useRef<MathJsStatic | null>(null);
     const [expression, setExpression] = useState<string>('');
     const [result, setResult] = useState<string>('');
-    const [isRadians, setIsRadians] = useState<boolean>(true); // Default to Radians
+    // Removed isRadians state
     const { toast } = useToast();
 
     // Initialize the mathjs instance on mount
     useEffect(() => {
         if (!mathInstanceRef.current) {
-            mathInstanceRef.current = create(all);
-            console.log("Math.js instance created.");
-             // Set initial angle mode on the instance
-            mathInstanceRef.current.config({ angle: isRadians ? 'rad' : 'deg' } as ConfigOptions); // Explicit cast needed
+            // Create instance with 'all' functions/constants and configure for radians
+            mathInstanceRef.current = create(all, { angle: 'rad' } as ConfigOptions); // Configure directly here
+            console.log("Math.js instance created and configured for Radians.");
         }
-    }, [isRadians]); // Re-run if isRadians changes to ensure config is updated (though toggle handles it too)
+    }, []); // No dependency needed anymore
 
     const formatResult = useCallback((value: any): string => {
          // Ensure mathInstanceRef.current exists before using it
@@ -43,7 +42,7 @@ const ScientificCalculatorPage: React.FC = () => {
         } catch {
             return String(value); // Fallback
         }
-    }, []); // No dependency on mathInstanceRef needed as ref changes don't trigger re-renders
+    }, []); // No dependency needed
 
     const handleButtonClick = (value: string) => {
         setResult(''); // Clear previous result on new input
@@ -76,16 +75,14 @@ const ScientificCalculatorPage: React.FC = () => {
             return;
         }
 
-        // Set the angle mode on the *local* instance for this evaluation
-        // (Though toggleRadDeg should keep it in sync)
-        math.config({ angle: isRadians ? 'rad' : 'deg' } as ConfigOptions);
-        console.log('Angle mode for eval:', math.config().angle);
+        // Removed angle mode configuration from here, it's set on init
+        // math.config({ angle: 'rad' } as ConfigOptions); // Always radians
 
         let evalResult: any;
         let formatted = '';
 
         try {
-            // Evaluate the expression using the local instance
+            // Evaluate the expression using the mathjs instance
             evalResult = math.evaluate(expression);
             console.log('Raw result:', evalResult); // Log raw result
 
@@ -118,10 +115,8 @@ const ScientificCalculatorPage: React.FC = () => {
                 variant: "destructive",
              });
         }
-        // No finally block needed to restore config for local instance,
-        // as toggleRadDeg manages the instance's config state.
 
-    }, [expression, isRadians, toast, formatResult]); // Dependencies are correct
+    }, [expression, toast, formatResult]); // Removed isRadians dependency
 
     const clearAll = () => {
         setExpression('');
@@ -133,27 +128,13 @@ const ScientificCalculatorPage: React.FC = () => {
         setExpression((prev) => prev.slice(0, -1));
     };
 
-     const toggleRadDeg = () => {
-        const newIsRadians = !isRadians;
-        setIsRadians(newIsRadians); // Use functional update
-
-         // Ensure mathInstanceRef.current exists before configuring it
-        const math = mathInstanceRef.current;
-        if (math) {
-            // Update the config on the local instance
-            math.config({ angle: newIsRadians ? 'rad' : 'deg' } as ConfigOptions);
-            console.log('Angle mode toggled to:', math.config().angle);
-            toast({ title: "Mode Changed", description: `Calculator set to ${newIsRadians ? 'Radians' : 'Degrees'}` });
-        } else {
-             toast({ title: "Error", description: "Calculator engine not ready to change mode.", variant: "destructive" });
-        }
-    };
-
+    // Removed toggleRadDeg function
 
     // Handle keyboard input for better UX
     const handleKeyDown = (event: React.KeyboardEvent) => {
         // Allow default behavior for some keys like arrows, Tab, etc.
-        if (!['0','1','2','3','4','5','6','7','8','9','.','+','-','*','/','^','(',')','Enter','=','Backspace','Escape','p','e','s','c','t','l','n','!','%','r','q'].includes(event.key.toLowerCase()) && !event.ctrlKey) {
+        // Removed 'r' from the list of handled keys
+        if (!['0','1','2','3','4','5','6','7','8','9','.','+','-','*','/','^','(',')','Enter','=','Backspace','Escape','p','e','s','c','t','l','n','!','%','q'].includes(event.key.toLowerCase()) && !event.ctrlKey) {
              return; // Let the browser handle other keys
         }
 
@@ -187,17 +168,19 @@ const ScientificCalculatorPage: React.FC = () => {
          else if (key.toLowerCase() === 'n') handleFunctionClick('log'); // 'n' for natural log (ln)
          else if (key === '!') handleButtonClick('!');
          else if (key === '%') handleButtonClick('%'); // Math.js supports % operator or mod function
-         else if (key.toLowerCase() === 'r') toggleRadDeg(); // 'r' to toggle Rad/Deg
+         // Removed 'r' key binding
          else if (key.toLowerCase() === 'q') handleFunctionClick('sqrt'); // 'q' for sqrt
          // Need a key for x^2, maybe Shift+6 for ^ then 2?
     };
 
     // Button Layout Configuration - Adjusted for mathjs syntax
     // Removed memory and ANS/EXP buttons for simplicity
+    // Removed the Deg/Rad button
     const buttonRows = [
         // Row 1: Scientific functions
         [
-            { label: isRadians ? 'Deg' : 'Rad', action: toggleRadDeg, className: 'bg-muted hover:bg-muted/80 text-xs', width: 'w-auto' },
+            // Removed Deg/Rad toggle button
+            { label: 'Rad', action: () => {}, className: 'bg-muted text-muted-foreground text-xs opacity-50 cursor-default', width: 'w-auto', disabled: true }, // Static Rad indicator
             { label: 'sin', action: () => handleFunctionClick('sin'), className: 'bg-muted hover:bg-muted/80', width: 'w-auto'},
             { label: 'cos', action: () => handleFunctionClick('cos'), className: 'bg-muted hover:bg-muted/80', width: 'w-auto'},
             { label: 'tan', action: () => handleFunctionClick('tan'), className: 'bg-muted hover:bg-muted/80', width: 'w-auto'},
@@ -260,7 +243,7 @@ const ScientificCalculatorPage: React.FC = () => {
                          <CalculatorIcon className="h-6 w-6 text-primary" />
                         Scientific Calculator
                     </CardTitle>
-                    <CardDescription>Enter an expression and press '='.</CardDescription>
+                    <CardDescription>Enter an expression and press '='. Mode is Radians.</CardDescription> {/* Updated description */}
                 </CardHeader>
                 <CardContent className="p-4 space-y-4">
                      {/* Display Area */}
@@ -295,14 +278,15 @@ const ScientificCalculatorPage: React.FC = () => {
                     <div className="grid grid-cols-6 gap-2">
                         {buttonRows.flat().map((btn, index) => (
                             <Button
-                                key={`${btn.label}-${index}`}
+                                // Use a more specific key if labels can repeat (e.g., `-${index}`)
+                                key={typeof btn.label === 'string' ? `${btn.label}-${index}` : `icon-${index}`}
                                 onClick={btn.action}
                                 variant={btn.className?.includes('bg-primary') || btn.className?.includes('bg-destructive') ? 'default' : 'outline'} // Adjust variant based on class
                                 className={cn(
                                     `text-base sm:text-lg h-14 flex items-center justify-center p-0`, // Base styles
                                     btn.width || 'w-full', // Width
                                     btn.className || '', // Custom classes
-                                    (btn as any).disabled ? 'opacity-50 cursor-not-allowed' : '', // Use 'as any' to bypass potential type issues if disabled prop isn't strictly defined on type
+                                    (btn as any).disabled ? 'opacity-50 cursor-default' : '', // Adjusted disabled styling
                                      // Handle spans explicitly with grid column classes if needed
                                      btn.label === '=' ? 'row-span-2 h-full col-span-3' : '',
                                      btn.label === '0' ? 'col-span-2 w-full' : '',
@@ -326,3 +310,4 @@ const ScientificCalculatorPage: React.FC = () => {
 
 export default ScientificCalculatorPage;
 
+    
