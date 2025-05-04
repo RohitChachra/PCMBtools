@@ -102,7 +102,7 @@ const calculatorCategories: CalculatorCategory[] = [
    {
     id: 'equilibrium',
     title: 'Equilibrium Constant',
-    description: 'Calculate Kc using equilibrium concentrations. Assumes simple A + B <=> C + D structure.', // Removed: Kp and ICE table calculations coming soon.
+    description: 'Calculate Kc from concentrations or Kp from Kc, Temperature, and Δn. Assumes simple A + B <=> C + D structure for Kc.', // Updated description
     component: EquilibriumConstantCalculator,
     icon: Calculator,
   },
