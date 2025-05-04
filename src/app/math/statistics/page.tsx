@@ -589,9 +589,9 @@ export default function StatisticsPage() {
              </div>
 
 
-             {/* Discrete Charts (Line and Bar) */}
+             {/* Discrete Charts (Line Chart Only) */}
              {discreteChartData.length > 0 && (
-                 <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                 <div className="mt-6">
                     <div>
                         <h3 className="text-lg font-semibold mb-2">Frequency Distribution (Line)</h3>
                         <ChartContainer config={chartConfigDiscreteLine} className="h-[300px] w-full">
@@ -625,38 +625,6 @@ export default function StatisticsPage() {
                             </LineChart>
                          </ChartContainer>
                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold mb-2">Frequency Distribution (Histogram)</h3>
-                         <ChartContainer config={chartConfigDiscreteBar} className="h-[300px] w-full">
-                           <BarChart data={discreteChartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="value" type="number" name="Value" domain={['dataMin', 'dataMax']} />
-                                <YAxis allowDecimals={false} name="Frequency"/>
-                                 {/* Reuse tooltip from Line Chart */}
-                                 <RechartsTooltip content={({ active, payload, label }) => {
-                                    if (active && payload && payload.length) {
-                                      return (
-                                        <div className="rounded-lg border bg-background p-2 shadow-sm">
-                                          <div className="grid grid-cols-2 gap-2">
-                                            <div className="flex flex-col">
-                                              <span className="text-[0.70rem] uppercase text-muted-foreground">Value</span>
-                                              <span className="font-bold text-muted-foreground">{label}</span>
-                                            </div>
-                                            <div className="flex flex-col">
-                                              <span className="text-[0.70rem] uppercase text-muted-foreground">Frequency</span>
-                                              <span className="font-bold">{payload[0].value}</span>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      );
-                                    }
-                                    return null;
-                                  }}/>
-                                <Legend />
-                                <Bar dataKey="frequency" fill="var(--color-frequency)" name="Frequency" />
-                            </BarChart>
-                         </ChartContainer>
-                      </div>
                 </div>
              )}
           </CardContent>
@@ -818,4 +786,3 @@ export default function StatisticsPage() {
     </div>
   );
 }
-
