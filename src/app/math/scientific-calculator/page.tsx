@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Calculator as CalculatorIcon, Delete } from 'lucide-react'; // Using Delete for Backspace
 import { useToast } from '@/hooks/use-toast';
 import * as math from 'mathjs';
+import { cn } from '@/lib/utils'; // Import the cn utility function
 
 const ScientificCalculatorPage: React.FC = () => {
     const [expression, setExpression] = useState<string>('');
@@ -58,10 +59,26 @@ const ScientificCalculatorPage: React.FC = () => {
             const scope = {
                // Define custom functions or override if needed
             };
-            const config = {
-                angle: isRadians ? 'rad' : 'deg'
-            };
-            const evalResult = math.evaluate(expression, scope);
+            // Note: math.js v11+ handles angle config differently
+            // math.config({ angle: isRadians ? 'rad' : 'deg' });
+            // For older versions (like v10 or lower), pass config to evaluate:
+            const evalConfig = { angle: isRadians ? 'rad' : 'deg' };
+            // Or use custom parsing/evaluation with the config
+
+            // Simple evaluate (might not respect angle config directly in older mathjs versions unless configured globally or passed)
+             let evalResult: any;
+            try {
+                 // Attempt evaluation, ensuring angle mode is respected if possible
+                 // With mathjs v11+, global config is preferred.
+                 // Let's assume mathjs version handles scope/config or it's set globally.
+                 // We can create a parser for more control if needed:
+                 // const parser = math.parser();
+                 // parser.evaluate(`config({angle: '${isRadians ? 'rad' : 'deg'}'})`);
+                 // evalResult = parser.evaluate(expression);
+                 evalResult = math.evaluate(expression, scope);
+             } catch (e) {
+                 throw e; // Re-throw evaluation errors
+             }
 
             // Handle potential complex results or units if needed in future
             if (typeof evalResult === 'function') {
@@ -77,10 +94,11 @@ const ScientificCalculatorPage: React.FC = () => {
             // Optional: setExpression(formatted); // Replace expression with result after calculation
         } catch (error: any) {
             console.error("Calculation Error:", error);
-            setResult(`Error: ${error.message || 'Invalid Expression'}`);
+            const errorMessage = error.message || "Invalid Expression";
+            setResult(`Error: ${errorMessage}`);
              toast({
                 title: "Calculation Error",
-                description: error.message || "Invalid expression. Please check your input.",
+                description: errorMessage,
                 variant: "destructive",
              });
         }
@@ -244,17 +262,17 @@ const ScientificCalculatorPage: React.FC = () => {
                                     `text-base sm:text-lg h-14 flex items-center justify-center p-0`, // Base styles
                                     btn.width || 'w-full', // Width
                                     btn.className || '', // Custom classes
-                                    btn.disabled ? 'opacity-50 cursor-not-allowed' : '',
+                                    (btn as any).disabled ? 'opacity-50 cursor-not-allowed' : '', // Use 'as any' to bypass potential type issues if disabled prop isn't strictly defined on type
                                      // Handle spans explicitly with grid column classes if needed
                                      btn.label === '=' ? 'row-span-2 h-full col-span-3' : '',
                                      btn.label === '0' ? 'col-span-2 w-full' : '',
                                      (btn.label === '+' || btn.label === '-') ? 'col-span-3 w-full' : '',
-                                     (typeof btn.label !== 'string' && btn.title === 'Backspace') ? 'col-span-1' : '', // Ensure backspace takes one col if others span
+                                     (typeof btn.label !== 'string' && (btn as any).title === 'Backspace') ? 'col-span-1' : '', // Ensure backspace takes one col if others span
                                      // Default to col-span-1 if not specified otherwise
                                       !btn.className?.includes('col-span-') && !btn.className?.includes('row-span-') ? 'col-span-1' : ''
                                 )}
-                                disabled={btn.disabled}
-                                title={typeof btn.label === 'string' ? btn.label : btn.title} // Use title for icon buttons
+                                disabled={(btn as any).disabled} // Use 'as any' here too
+                                title={typeof btn.label === 'string' ? btn.label : (btn as any).title} // Use title for icon buttons
                             >
                                 {btn.label}
                             </Button>
