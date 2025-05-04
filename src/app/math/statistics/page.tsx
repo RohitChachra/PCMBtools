@@ -83,27 +83,21 @@ interface ContinuousChartPoint {
     interval: string; // Keep interval for tooltip
 }
 
-
-const chartConfigDiscreteLine: ChartConfig = { // Renamed for clarity
-    frequency: {
-      label: 'Frequency',
-      color: 'hsl(var(--chart-1))',
-    },
+// Chart configs (using different colors)
+const chartConfigDiscreteLine: ChartConfig = {
+  frequency: { label: 'Frequency', color: 'hsl(var(--chart-1))' },
 } satisfies ChartConfig;
 
-const chartConfigDiscreteBar: ChartConfig = { // Added for Histogram
-    frequency: {
-      label: 'Frequency',
-      color: 'hsl(var(--chart-3))', // Use a different color
-    },
+const chartConfigDiscreteBar: ChartConfig = {
+  frequency: { label: 'Frequency', color: 'hsl(var(--chart-3))' },
 } satisfies ChartConfig;
 
-// Chart config for Frequency Polygon (Line Chart)
-const chartConfigContinuous: ChartConfig = {
-    frequency: {
-      label: 'Frequency',
-      color: 'hsl(var(--chart-2))',
-    },
+const chartConfigContinuousLine: ChartConfig = {
+  frequency: { label: 'Frequency', color: 'hsl(var(--chart-2))' },
+} satisfies ChartConfig;
+
+const chartConfigContinuousBar: ChartConfig = {
+  frequency: { label: 'Frequency', color: 'hsl(var(--chart-4))' }, // New color for continuous histogram
 } satisfies ChartConfig;
 
 
@@ -116,7 +110,8 @@ export default function StatisticsPage() {
   const [discreteResults, setDiscreteResults] = useState<DiscreteResults | null>(null);
   const [continuousResults, setContinuousResults] = useState<ContinuousResults | null>(null);
   const [discreteChartData, setDiscreteChartData] = useState<DiscreteChartPoint[]>([]);
-  const [continuousChartData, setContinuousChartData] = useState<ContinuousChartPoint[]>([]);
+  const [continuousChartData, setContinuousChartData] = useState<ContinuousChartPoint[]>([]); // For Frequency Polygon
+  const [continuousHistogramData, setContinuousHistogramData] = useState<ContinuousChartPoint[]>([]); // For Histogram
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -127,6 +122,7 @@ export default function StatisticsPage() {
     setContinuousResults(null);
     setDiscreteChartData([]);
     setContinuousChartData([]);
+    setContinuousHistogramData([]); // Clear histogram data too
     // Optionally clear inputs when switching type
     // setDiscreteDataInput('');
     // setContinuousData([{ id: 1, lower: '', upper: '', frequency: '' }]);
@@ -205,6 +201,8 @@ export default function StatisticsPage() {
       prev.map(row => (row.id === id ? { ...row, [field]: value } : row))
     );
      setContinuousResults(null); // Clear results on change
+     setContinuousChartData([]);
+     setContinuousHistogramData([]);
      setError(null);
   };
 
@@ -220,6 +218,7 @@ export default function StatisticsPage() {
     setError(null);
     setContinuousResults(null);
     setContinuousChartData([]);
+    setContinuousHistogramData([]); // Clear histogram data
 
     let totalFrequency = 0;
     let sumFx = 0; // Sum of (frequency * midpoint)
@@ -230,6 +229,7 @@ export default function StatisticsPage() {
     const frequencies: number[] = [];
     const intervals: string[] = [];
     const chartDataForPolygon: ContinuousChartPoint[] = []; // For the line chart
+    const chartDataForHistogram: ContinuousChartPoint[] = []; // For the bar chart
 
     let previousUpper = -Infinity; // To check for gaps/overlap
 
@@ -274,8 +274,9 @@ export default function StatisticsPage() {
         cumulativeFreq += freq;
         cumulativeFrequencyTable.push({ interval: intervalLabel, cf: cumulativeFreq });
 
-        // Add data point for frequency polygon chart
-        chartDataForPolygon.push({ midpoint, frequency: freq, interval: intervalLabel });
+        const chartPoint = { midpoint, frequency: freq, interval: intervalLabel };
+        chartDataForPolygon.push(chartPoint);
+        chartDataForHistogram.push(chartPoint); // Use same point for histogram, XAxis will use interval
     }
 
     if (totalFrequency === 0) {
@@ -285,19 +286,12 @@ export default function StatisticsPage() {
 
     // Sort chart data by midpoint for the line chart
     chartDataForPolygon.sort((a, b) => a.midpoint - b.midpoint);
-
-    // Optionally add points at zero frequency for the start and end of the polygon
-    // This depends on the exact desired visual representation
-    // const firstMidpoint = chartDataForPolygon[0]?.midpoint;
-    // const lastMidpoint = chartDataForPolygon[chartDataForPolygon.length - 1]?.midpoint;
-    // const firstIntervalWidth = parseFloat(continuousData[0]?.upper) - parseFloat(continuousData[0]?.lower);
-    // const lastIntervalWidth = parseFloat(continuousData[continuousData.length - 1]?.upper) - parseFloat(continuousData[continuousData.length - 1]?.lower);
-    // if (firstMidpoint !== undefined && !isNaN(firstIntervalWidth)) {
-    //     chartDataForPolygon.unshift({ midpoint: firstMidpoint - firstIntervalWidth, frequency: 0, interval: 'Start' });
-    // }
-    // if (lastMidpoint !== undefined && !isNaN(lastIntervalWidth)) {
-    //     chartDataForPolygon.push({ midpoint: lastMidpoint + lastIntervalWidth, frequency: 0, interval: 'End' });
-    // }
+    // Histogram data sorting is less critical as bars are discrete, but sorting by interval makes sense
+    chartDataForHistogram.sort((a, b) => {
+        const aLower = parseFloat(a.interval.split(' - ')[0]);
+        const bLower = parseFloat(b.interval.split(' - ')[0]);
+        return aLower - bLower;
+    });
 
 
     try {
@@ -363,6 +357,7 @@ export default function StatisticsPage() {
                  groupedMode = groupedMode.toFixed(4); // Format
              }
          } else {
+             // If multiple classes have the same max frequency, it's multimodal or uniform
              groupedMode = "Multimodal or Uniform";
          }
 
@@ -401,6 +396,7 @@ export default function StatisticsPage() {
         });
 
         setContinuousChartData(chartDataForPolygon); // Set data for frequency polygon
+        setContinuousHistogramData(chartDataForHistogram); // Set data for histogram
 
         toast({ title: "Calculation Success", description: "Continuous statistics calculated." });
 
@@ -728,60 +724,92 @@ export default function StatisticsPage() {
                  </Table>
              </div>
 
-              {/* Continuous Chart (Frequency Polygon - Line Chart) */}
-             {continuousChartData.length > 0 && (
-                 <div className="mt-6">
-                 <h3 className="text-lg font-semibold mb-2">Frequency Polygon</h3>
-                  <ChartContainer config={chartConfigContinuous} className="h-[300px] w-full">
-                    <LineChart data={continuousChartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                         <CartesianGrid strokeDasharray="3 3" />
-                         {/* XAxis uses midpoint, YAxis uses frequency */}
-                         <XAxis
-                           dataKey="midpoint"
-                           type="number"
-                           name="Class Midpoint"
-                           domain={['dataMin', 'dataMax']}
-                           // Optional: Add padding if needed
-                           // padding={{ left: 10, right: 10 }}
-                         />
-                         <YAxis dataKey="frequency" allowDecimals={false} name="Frequency"/>
-                         {/* Custom Tooltip to show Interval and Frequency */}
-                         <RechartsTooltip content={({ active, payload, label }) => {
-                            if (active && payload && payload.length) {
-                              const pointData = payload[0].payload as ContinuousChartPoint; // Get the original data point
-                              return (
-                                <div className="rounded-lg border bg-background p-2 shadow-sm">
-                                  <div className="grid grid-cols-2 gap-2">
-                                    <div className="flex flex-col">
-                                      <span className="text-[0.70rem] uppercase text-muted-foreground">Interval</span>
-                                      <span className="font-bold text-muted-foreground">{pointData.interval}</span>
-                                    </div>
-                                     <div className="flex flex-col">
-                                      <span className="text-[0.70rem] uppercase text-muted-foreground">Midpoint</span>
-                                      <span className="font-bold text-muted-foreground">{label}</span>
-                                    </div>
-                                    <div className="flex flex-col col-span-2">
-                                      <span className="text-[0.70rem] uppercase text-muted-foreground">Frequency</span>
-                                      <span className="font-bold">{payload[0].value}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            }
-                            return null;
-                          }} />
-                         <Legend />
-                         {/* Line connects frequencies at midpoints */}
-                         <Line
-                           type="monotone"
-                           dataKey="frequency"
-                           stroke="var(--color-frequency)"
-                           strokeWidth={2}
-                           dot={true} // Show dots at midpoints
-                           name="Frequency"
-                          />
-                     </LineChart>
-                   </ChartContainer>
+              {/* Continuous Charts (Frequency Polygon & Histogram) */}
+             {(continuousChartData.length > 0 || continuousHistogramData.length > 0) && (
+                 <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Frequency Polygon */}
+                    {continuousChartData.length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-2">Frequency Polygon</h3>
+                          <ChartContainer config={chartConfigContinuousLine} className="h-[300px] w-full">
+                            <LineChart data={continuousChartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="midpoint" type="number" name="Class Midpoint" domain={['dataMin', 'dataMax']} />
+                                <YAxis dataKey="frequency" allowDecimals={false} name="Frequency"/>
+                                <RechartsTooltip content={({ active, payload, label }) => {
+                                    if (active && payload && payload.length) {
+                                      const pointData = payload[0].payload as ContinuousChartPoint;
+                                      return (
+                                        <div className="rounded-lg border bg-background p-2 shadow-sm">
+                                          <div className="grid grid-cols-2 gap-2">
+                                            <div className="flex flex-col">
+                                              <span className="text-[0.70rem] uppercase text-muted-foreground">Interval</span>
+                                              <span className="font-bold text-muted-foreground">{pointData.interval}</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                              <span className="text-[0.70rem] uppercase text-muted-foreground">Midpoint</span>
+                                              <span className="font-bold text-muted-foreground">{label}</span>
+                                            </div>
+                                            <div className="flex flex-col col-span-2">
+                                              <span className="text-[0.70rem] uppercase text-muted-foreground">Frequency</span>
+                                              <span className="font-bold">{payload[0].value}</span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  }} />
+                                <Legend />
+                                <Line type="monotone" dataKey="frequency" stroke="var(--color-frequency)" strokeWidth={2} dot={true} name="Frequency" />
+                            </LineChart>
+                          </ChartContainer>
+                        </div>
+                    )}
+
+                    {/* Histogram */}
+                    {continuousHistogramData.length > 0 && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-2">Histogram</h3>
+                          <ChartContainer config={chartConfigContinuousBar} className="h-[300px] w-full">
+                            {/* Using interval as the category for XAxis */}
+                            <BarChart data={continuousHistogramData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }} barGap={0} /* Set barGap to 0 for histogram */>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                {/* XAxis displays the interval labels */}
+                                <XAxis dataKey="interval" name="Class Interval" angle={-45} textAnchor="end" height={50} interval={0} /* Show all labels */ />
+                                <YAxis dataKey="frequency" allowDecimals={false} name="Frequency"/>
+                                <RechartsTooltip content={({ active, payload, label }) => {
+                                    if (active && payload && payload.length) {
+                                      // Label here is the interval
+                                      const pointData = payload[0].payload as ContinuousChartPoint;
+                                      return (
+                                        <div className="rounded-lg border bg-background p-2 shadow-sm">
+                                          <div className="grid grid-cols-1 gap-1"> {/* Simplified tooltip */}
+                                            <div className="flex flex-col">
+                                              <span className="text-[0.70rem] uppercase text-muted-foreground">Interval</span>
+                                              <span className="font-bold text-muted-foreground">{label}</span>
+                                            </div>
+                                             <div className="flex flex-col">
+                                              <span className="text-[0.70rem] uppercase text-muted-foreground">Midpoint</span>
+                                              <span className="font-bold text-muted-foreground">{pointData.midpoint}</span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                              <span className="text-[0.70rem] uppercase text-muted-foreground">Frequency</span>
+                                              <span className="font-bold">{payload[0].value}</span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  }} />
+                                <Legend />
+                                {/* Use interval for the bar's key if needed, but dataKey is frequency */}
+                                <Bar dataKey="frequency" fill="var(--color-frequency)" name="Frequency" />
+                            </BarChart>
+                          </ChartContainer>
+                        </div>
+                    )}
                 </div>
              )}
           </CardContent>
@@ -790,3 +818,4 @@ export default function StatisticsPage() {
     </div>
   );
 }
+
