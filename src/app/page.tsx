@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sigma, FlaskConical, Atom, Microscope } from 'lucide-react'; // Added Microscope
+import { Sigma, FlaskConical, Atom, Microscope, BookMarked } from 'lucide-react'; // Added BookMarked for Dictionary
 import Image from 'next/image';
 
 export default function Home() {
@@ -13,7 +13,7 @@ export default function Home() {
       href: '/math',
       icon: Sigma,
       imageHint: 'mathematics equations graphs',
-      imageSrc: '/mathematics.jpg', // Assuming image exists
+      imageSrc: '/mathematics.jpg',
     },
     {
       title: 'Chemistry',
@@ -21,7 +21,7 @@ export default function Home() {
       href: '/chemistry',
       icon: FlaskConical,
       imageHint: 'chemistry molecules structure',
-      imageSrc: '/chemistry.jpg', // Assuming image exists
+      imageSrc: '/chemistry.jpg',
     },
     {
       title: 'Physics',
@@ -29,15 +29,23 @@ export default function Home() {
       href: '/physics',
       icon: Atom,
       imageHint: 'physics formulas equations',
-      imageSrc: '/physics.jpg', // Assuming image exists
+      imageSrc: '/physics.jpg',
     },
-     { // New Entry for Biology
+     {
       title: 'Biology',
       description: 'Explore biological concepts with interactive flashcards.',
       href: '/biology',
       icon: Microscope,
       imageHint: 'biology cell dna microscope',
-      imageSrc: '/biology.jpeg', // Assuming image exists
+      imageSrc: '/biology.jpeg',
+    },
+     { // New Entry for Dictionary
+      title: 'Dictionary',
+      description: 'Look up word definitions, related terms, and summaries.',
+      href: '/dictionary',
+      icon: BookMarked,
+      imageHint: 'dictionary book words',
+      imageSrc: 'https://picsum.photos/300/200?random=4', // Placeholder image
     },
   ];
 
@@ -48,12 +56,12 @@ export default function Home() {
           Welcome to PCMBtools
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground">
-          Explore the wonders of Math, Chemistry, Physics, and Biology — all in one place. Dive into interactive graphs, molecular structures, scientific calculators, and flashcards.
+          Explore the wonders of Math, Chemistry, Physics, Biology, and Language — all in one place. Dive into interactive graphs, molecular structures, scientific calculators, flashcards, and a comprehensive dictionary.
         </p>
       </section>
 
-      {/* Updated grid to accommodate 4 items */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-7xl">
+      {/* Adjusted grid to accommodate 5 items - might need new layout */}
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-7xl"> {/* Adjusted to lg:grid-cols-3, might need further styling */}
         {features.map((feature) => (
           <Card key={feature.title} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
             <CardHeader className="items-center text-center p-4 bg-secondary rounded-t-lg">
@@ -65,7 +73,7 @@ export default function Home() {
                   objectFit="cover"
                   data-ai-hint={feature.imageHint}
                   placeholder="empty"
-                  // Add placeholder if needed or onError handler
+                  className="transition-transform duration-300 group-hover:scale-105" // Added basic hover effect
                 />
                </div>
               <CardTitle className="flex items-center justify-center gap-2 text-xl">

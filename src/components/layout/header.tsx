@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { BookOpenText, FlaskConical, Atom, Microscope, BarChart3, Sigma, Shapes, Calculator, ArrowRightLeft } from 'lucide-react'; // Added Calculator, ArrowRightLeft
+import { BookOpenText, FlaskConical, Atom, Microscope, BarChart3, Sigma, Shapes, Calculator, ArrowRightLeft, BookMarked } from 'lucide-react'; // Added BookMarked
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Menu } from 'lucide-react';
@@ -33,7 +33,7 @@ const navItems = [
     subItems: [
       { href: '/math/geometry', title: 'Geometry Calculator', description: 'Calculate properties of 2D/3D shapes.', icon: Shapes },
       { href: '/math/graphing', title: 'Graphing Calculator', description: 'Visualize functions interactively.', icon: Calculator },
-      { href: '/math/scientific-calculator', title: 'Scientific Calculator', description: 'Perform complex calculations.', icon: Calculator },
+      { href: '/math/scientific-calculator', title: 'Scientific Calculator', description: 'Perform complex calculations.', icon: Sigma }, // Changed icon
       { href: '/math/statistics', title: 'Statistics Calculator', description: 'Analyze discrete & continuous data.', icon: BarChart3 },
     ],
   },
@@ -57,6 +57,11 @@ const navItems = [
     trigger: { label: 'Biology', icon: Microscope },
     href: '/biology',
     // No sub-items currently for Biology
+  },
+   { // New Entry for Dictionary
+    trigger: { label: 'Dictionary', icon: BookMarked },
+    href: '/dictionary',
+    // No sub-items for Dictionary
   },
 ];
 
@@ -105,31 +110,10 @@ export function Header() {
             {navItems.map((item) => (
               <NavigationMenuItem key={item.trigger.label}>
                  {item.subItems && item.subItems.length > 0 ? (
-                     <>
-                         {/* Removed asChild, content is now inside the trigger */}
-                         <NavigationMenuTrigger className="flex items-center gap-1">
-                             <item.trigger.icon className="h-4 w-4" />
-                             {item.trigger.label}
-                         </NavigationMenuTrigger>
-                         <NavigationMenuContent>
-                              <ul className={cn("grid gap-3 p-4 md:w-[550px] lg:w-[650px]", `lg:grid-cols-${Math.min(item.subItems.length, 3)}`)}>
-                              {item.subItems.map((subItem) => (
-                                <ListItem
-                                  key={subItem.href}
-                                  title={subItem.title}
-                                  href={subItem.href}
-                                  icon={subItem.icon}
-                                >
-                                  {subItem.description}
-                                </ListItem>
-                              ))}
-                              {/* Link to the main category page within the content */}
-                              <ListItem href={item.href} title={`All ${item.trigger.label}`} icon={item.trigger.icon}>
-                                View all {item.trigger.label.toLowerCase()} tools.
-                              </ListItem>
-                            </ul>
-                          </NavigationMenuContent>
-                     </>
+                    <NavigationMenuTrigger className="flex items-center gap-1">
+                        <item.trigger.icon className="h-4 w-4" />
+                        {item.trigger.label}
+                    </NavigationMenuTrigger>
                  ) : (
                      // Simple link if no sub-items
                     <Link href={item.href} legacyBehavior passHref>
@@ -138,6 +122,27 @@ export function Header() {
                              {item.trigger.label}
                         </NavigationMenuLink>
                     </Link>
+                 )}
+                {/* Content only rendered if subItems exist */}
+                 {item.subItems && item.subItems.length > 0 && (
+                     <NavigationMenuContent>
+                          <ul className={cn("grid gap-3 p-4 md:w-[550px] lg:w-[650px]", `lg:grid-cols-${Math.min(item.subItems.length, 3)}`)}>
+                          {item.subItems.map((subItem) => (
+                            <ListItem
+                              key={subItem.href}
+                              title={subItem.title}
+                              href={subItem.href}
+                              icon={subItem.icon}
+                            >
+                              {subItem.description}
+                            </ListItem>
+                          ))}
+                          {/* Link to the main category page within the content */}
+                          <ListItem href={item.href} title={`All ${item.trigger.label}`} icon={item.trigger.icon}>
+                            View all {item.trigger.label.toLowerCase()} tools.
+                          </ListItem>
+                        </ul>
+                      </NavigationMenuContent>
                  )}
               </NavigationMenuItem>
             ))}
@@ -159,14 +164,14 @@ export function Header() {
                 <span className="sr-only">Toggle Menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="p-0"> {/* Remove padding from SheetContent */}
+            <SheetContent side="right" className="p-0">
               {/* Add visually hidden title and description for accessibility */}
               <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
               <SheetDescription className="sr-only">
                 Mobile navigation menu for PCMBtools.
               </SheetDescription>
-              <ScrollArea className="h-full py-6 px-6"> {/* Add ScrollArea and padding here */}
-                 <Link href="/" className="flex items-center gap-2 mb-6"> {/* Increased bottom margin */}
+              <ScrollArea className="h-full py-6 px-6">
+                 <Link href="/" className="flex items-center gap-2 mb-6">
                     <BookOpenText className="h-6 w-6 text-primary" />
                     <span className="text-lg font-bold">PCMBtools</span>
                  </Link>
@@ -174,22 +179,20 @@ export function Header() {
                    {navItems.map((item) => (
                        <div key={item.trigger.label} className="border-b">
                          {item.subItems && item.subItems.length > 0 ? (
-                            <AccordionItem value={item.trigger.label} className="border-b-0"> {/* Remove internal border */}
+                            <AccordionItem value={item.trigger.label} className="border-b-0">
                                <AccordionTrigger className="flex items-center justify-between w-full py-3 text-lg font-medium hover:bg-accent rounded-md px-2 hover:no-underline">
                                     <div className="flex items-center gap-2">
                                         <item.trigger.icon className="h-5 w-5" />
                                         {item.trigger.label}
                                     </div>
                                 </AccordionTrigger>
-                                <AccordionContent className="pt-1 pb-2 pl-6"> {/* Indent sub-items */}
+                                <AccordionContent className="pt-1 pb-2 pl-6">
                                     <div className="grid gap-2">
-                                        {/* Link to the main category page */}
                                         <Link
                                           key={`${item.href}-main`}
                                           href={item.href}
                                           className="flex items-center gap-2 rounded-md p-2 text-base font-medium text-muted-foreground hover:bg-accent/80 hover:text-accent-foreground"
                                         >
-                                          {/* Optional: Add an icon for 'All' */}
                                           All {item.trigger.label}
                                         </Link>
                                         {item.subItems.map((subItem) => (
@@ -206,7 +209,6 @@ export function Header() {
                                 </AccordionContent>
                             </AccordionItem>
                          ) : (
-                            // Simple link if no sub-items
                             <Link
                                 href={item.href}
                                 className="flex items-center gap-2 rounded-md px-2 py-3 text-lg font-medium hover:bg-accent"
@@ -226,4 +228,3 @@ export function Header() {
     </header>
   );
 }
-
