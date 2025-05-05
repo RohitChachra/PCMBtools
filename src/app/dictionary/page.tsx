@@ -206,7 +206,7 @@ export default function DictionaryPage() {
 
          {/* Dictionary Definition Card */}
          {!isLoading && dictionaryData && (
-            <Card> {/* Removed shadow-md */}
+            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
                <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                      {dictionaryData[0].word}
@@ -219,9 +219,9 @@ export default function DictionaryPage() {
                   </CardTitle>
                   <CardDescription>Definition</CardDescription>
                </CardHeader>
-               <CardContent className="space-y-4 max-h-[60vh] overflow-y-auto pr-4">
+               <CardContent className="space-y-4 max-h-[60vh] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-muted scrollbar-track-background">
                   {dictionaryData[0].meanings.map((meaning, index) => (
-                    <div key={index} className="space-y-2 border-l-2 border-primary pl-3">
+                    <div key={index} className="space-y-2 border-l-2 border-primary pl-3 py-1">
                       <h3 className="font-semibold text-primary">{meaning.partOfSpeech}</h3>
                       <ul className="list-decimal pl-5 space-y-1">
                         {meaning.definitions.map((def, defIndex) => (
@@ -255,7 +255,7 @@ export default function DictionaryPage() {
 
            {/* Wikipedia Summary Card */}
           {!isLoading && wikipediaData && (
-            <Card> {/* Removed shadow-md and md:col-span-2 */}
+            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
                 <CardHeader>
                    <CardTitle>Summary for "{wikipediaData.title}"</CardTitle>
                    <CardDescription>From Wikipedia</CardDescription>
