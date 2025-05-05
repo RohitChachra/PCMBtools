@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { create, all, type MathJsStatic, type ConfigOptions } from 'mathjs';
 import { cn } from '@/lib/utils';
 import { calculateMolarMass } from '@/lib/chemistry-utils';
-import chemicalEquationBalancer from 'chemical-equation-balancer'; // Use default import
+import * as chemicalEquationBalancer from 'chemical-equation-balancer'; // Use namespace import
 
 const math = create(all, { number: 'BigNumber', precision: 10 } as ConfigOptions);
 
@@ -296,3 +296,5 @@ export const StoichiometryCalculator = () => {
     </Card>
   );
 };
+
+    
