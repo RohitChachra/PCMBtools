@@ -63,7 +63,7 @@ export default function Home() {
       {/* Adjusted grid to accommodate 5 items - might need new layout */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-7xl"> {/* Adjusted to lg:grid-cols-3, might need further styling */}
         {features.map((feature) => (
-          <Card key={feature.title} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <Card key={feature.title} className="flex flex-col overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 group"> {/* Added group class */}
             <CardHeader className="items-center text-center p-4 bg-secondary rounded-t-lg">
                <div className="relative w-full h-40 mb-4 rounded-md overflow-hidden">
                 <Image

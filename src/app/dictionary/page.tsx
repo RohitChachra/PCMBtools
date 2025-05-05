@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { BookMarked, Search, Volume2, Link as LinkIcon } from 'lucide-react';
+import { BookMarked, Search, Volume2 } from 'lucide-react'; // Removed LinkIcon
 
 // --- API Types ---
 
@@ -22,20 +22,17 @@ interface DictionaryApiResponse {
     definitions: {
       definition: string;
       example?: string;
-      synonyms?: string[];
-      antonyms?: string[];
+      synonyms?: string[]; // Keep these as they come from dictionaryapi
+      antonyms?: string[]; // Keep these as they come from dictionaryapi
     }[];
-    synonyms?: string[];
-    antonyms?: string[];
+    synonyms?: string[]; // Keep these as they come from dictionaryapi
+    antonyms?: string[]; // Keep these as they come from dictionaryapi
   }[];
   license: { name: string; url: string };
   sourceUrls: string[];
 }
 
-interface DatamuseRelatedWord {
-  word: string;
-  score: number;
-}
+// Removed DatamuseRelatedWord interface
 
 interface WikipediaSummary {
   title: string;
@@ -62,17 +59,7 @@ async function getDictionaryDefinition(word: string): Promise<DictionaryApiRespo
   }
 }
 
-async function getRelatedWords(word: string, type: 'syn' | 'ant' | 'rel_trg'): Promise<DatamuseRelatedWord[] | null> {
-  try {
-    const response = await fetch(`https://api.datamuse.com/words?rel_${type}=${encodeURIComponent(word)}&max=10`);
-    if (!response.ok) throw new Error(`Datamuse API Error: ${response.status}`);
-    const data = await response.json();
-    return data as DatamuseRelatedWord[];
-  } catch (error) {
-    console.error(`Error fetching related words (${type}):`, error);
-    return null;
-  }
-}
+// Removed getRelatedWords function
 
 async function getWikipediaSummary(word: string): Promise<WikipediaSummary | null> {
     try {
@@ -101,11 +88,9 @@ export default function DictionaryPage() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // State for each API result
+  // State for each remaining API result
   const [dictionaryData, setDictionaryData] = useState<DictionaryApiResponse[] | null>(null);
-  const [synonyms, setSynonyms] = useState<DatamuseRelatedWord[] | null>(null);
-  const [antonyms, setAntonyms] = useState<DatamuseRelatedWord[] | null>(null);
-  const [triggers, setTriggers] = useState<DatamuseRelatedWord[] | null>(null); // Words triggered by search term
+  // Removed synonyms, antonyms, triggers state
   const [wikipediaData, setWikipediaData] = useState<WikipediaSummary | null>(null);
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -120,17 +105,13 @@ export default function DictionaryPage() {
     setIsLoading(true);
     setError(null);
     setDictionaryData(null);
-    setSynonyms(null);
-    setAntonyms(null);
-    setTriggers(null);
+    // Removed setting related words state to null
     setWikipediaData(null);
 
     try {
-      const [dictRes, synRes, antRes, trigRes, wikiRes] = await Promise.allSettled([
+      // Removed related words calls from Promise.allSettled
+      const [dictRes, wikiRes] = await Promise.allSettled([
         getDictionaryDefinition(trimmedSearch),
-        getRelatedWords(trimmedSearch, 'syn'),
-        getRelatedWords(trimmedSearch, 'ant'),
-        getRelatedWords(trimmedSearch, 'rel_trg'),
         getWikipediaSummary(trimmedSearch),
       ]);
 
@@ -140,9 +121,7 @@ export default function DictionaryPage() {
         setDictionaryData(dictRes.value);
         foundSomething = true;
       }
-      if (synRes.status === 'fulfilled' && synRes.value) setSynonyms(synRes.value);
-      if (antRes.status === 'fulfilled' && antRes.value) setAntonyms(antRes.value);
-      if (trigRes.status === 'fulfilled' && trigRes.value) setTriggers(trigRes.value);
+      // Removed handling for related words results
       if (wikiRes.status === 'fulfilled' && wikiRes.value) {
         setWikipediaData(wikiRes.value);
         foundSomething = true;
@@ -160,12 +139,8 @@ export default function DictionaryPage() {
          toast({ title: "Search Complete", description: `Found results for "${trimmedSearch}".` });
       }
 
-      // Log specific errors for related words if needed
-      if (synRes.status === 'rejected') console.error("Synonym fetch error:", synRes.reason);
-      if (antRes.status === 'rejected') console.error("Antonym fetch error:", antRes.reason);
-      if (trigRes.status === 'rejected') console.error("Trigger fetch error:", trigRes.reason);
+      // Removed logging for related words errors
       if (wikiRes.status === 'rejected') console.error("Wikipedia fetch error:", wikiRes.reason);
-
 
     } catch (err) { // Catch unexpected errors during Promise.allSettled itself
       console.error('Overall search failed:', err);
@@ -184,7 +159,7 @@ export default function DictionaryPage() {
     <div className="space-y-8">
       <h1 className="text-3xl font-bold">Dictionary & Word Explorer</h1>
       <p className="text-muted-foreground">
-        Enter a word to find its definition, related terms, and a summary.
+        Enter a word to find its definition and a summary.
       </p>
 
       <Card>
@@ -214,7 +189,7 @@ export default function DictionaryPage() {
          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Skeleton className="h-64 w-full" />
             <Skeleton className="h-64 w-full" />
-            <Skeleton className="h-48 w-full md:col-span-2" />
+            {/* Remove skeleton for related words */}
          </div>
        )}
 
@@ -231,7 +206,7 @@ export default function DictionaryPage() {
 
          {/* Dictionary Definition Card */}
          {!isLoading && dictionaryData && (
-            <Card className="shadow-md">
+            <Card> {/* Removed shadow-md */}
                <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                      {dictionaryData[0].word}
@@ -242,6 +217,7 @@ export default function DictionaryPage() {
                          </Button>
                       )}
                   </CardTitle>
+                  <CardDescription>Definition</CardDescription>
                </CardHeader>
                <CardContent className="space-y-4 max-h-[60vh] overflow-y-auto pr-4">
                   {dictionaryData[0].meanings.map((meaning, index) => (
@@ -255,6 +231,7 @@ export default function DictionaryPage() {
                           </li>
                         ))}
                       </ul>
+                       {/* Synonyms/Antonyms from Dictionary API */}
                        {meaning.synonyms && meaning.synonyms.length > 0 && (
                             <div className="mt-2">
                                 <span className="text-sm font-medium text-muted-foreground">Synonyms: </span>
@@ -270,63 +247,18 @@ export default function DictionaryPage() {
                     </div>
                   ))}
                </CardContent>
-                <CardFooter className="text-xs text-muted-foreground">
-                  {dictionaryData[0].sourceUrls?.[0] && (
-                     <a href={dictionaryData[0].sourceUrls[0]} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center gap-1">
-                         <LinkIcon className="h-3 w-3" /> Source
-                     </a>
-                  )}
-               </CardFooter>
+               {/* Removed CardFooter with source link */}
             </Card>
          )}
 
-          {/* Related Words Card */}
-          {!isLoading && (synonyms || antonyms || triggers) && (
-             <Card className="shadow-md">
-                <CardHeader>
-                   <CardTitle>Related Words</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 max-h-[60vh] overflow-y-auto pr-4">
-                   {synonyms && synonyms.length > 0 && (
-                     <div>
-                       <h3 className="font-semibold text-primary mb-1">Synonyms</h3>
-                       <div className="flex flex-wrap gap-1">
-                         {synonyms.map(word => <span key={word.word} className="bg-secondary text-secondary-foreground px-2 py-1 rounded-full text-xs">{word.word}</span>)}
-                       </div>
-                     </div>
-                   )}
-                   {antonyms && antonyms.length > 0 && (
-                      <div>
-                        <h3 className="font-semibold text-primary mb-1">Antonyms</h3>
-                         <div className="flex flex-wrap gap-1">
-                            {antonyms.map(word => <span key={word.word} className="bg-secondary text-secondary-foreground px-2 py-1 rounded-full text-xs">{word.word}</span>)}
-                         </div>
-                      </div>
-                   )}
-                    {triggers && triggers.length > 0 && (
-                       <div>
-                         <h3 className="font-semibold text-primary mb-1">Words often used with "{searchTerm}"</h3>
-                          <div className="flex flex-wrap gap-1">
-                             {triggers.map(word => <span key={word.word} className="bg-secondary text-secondary-foreground px-2 py-1 rounded-full text-xs">{word.word}</span>)}
-                          </div>
-                       </div>
-                    )}
-                    {(!synonyms || synonyms.length === 0) && (!antonyms || antonyms.length === 0) && (!triggers || triggers.length === 0) && (
-                        <p className="text-muted-foreground">No related words found via Datamuse.</p>
-                    )}
-                </CardContent>
-                <CardFooter className="text-xs text-muted-foreground">
-                    Related words sourced via Datamuse API.
-                </CardFooter>
-             </Card>
-          )}
+          {/* Removed Related Words Card */}
 
-           {/* Wikipedia Summary Card (Spanning full width below others) */}
+           {/* Wikipedia Summary Card */}
           {!isLoading && wikipediaData && (
-            <Card className="shadow-md md:col-span-2"> {/* Spans 2 columns on medium+ screens */}
+            <Card> {/* Removed shadow-md and md:col-span-2 */}
                 <CardHeader>
                    <CardTitle>Summary for "{wikipediaData.title}"</CardTitle>
-                   {/* <CardDescription>From Wikipedia</CardDescription> // Optional */}
+                   <CardDescription>From Wikipedia</CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="sm:col-span-1 relative min-h-[150px] bg-muted rounded-md flex items-center justify-center overflow-hidden border">
@@ -364,25 +296,15 @@ export default function DictionaryPage() {
                        <p className="text-base leading-relaxed">{wikipediaData.extract}</p>
                     </div>
                 </CardContent>
-                <CardFooter>
-                   {wikipediaData.content_urls?.desktop?.page && (
-                      <a
-                          href={wikipediaData.content_urls.desktop.page}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-primary hover:underline flex items-center gap-1"
-                       >
-                          <LinkIcon className="h-4 w-4" /> Read more on Wikipedia
-                      </a>
-                   )}
-                </CardFooter>
+                 {/* Removed CardFooter with Wikipedia link */}
             </Card>
          )}
 
        </div> {/* End Results Grid */}
 
        {/* Placeholder when no search has been performed */}
-       {!isLoading && !error && !dictionaryData && !synonyms && !antonyms && !triggers && !wikipediaData && searchTerm && (
+       {/* Adjusted check to exclude related words */}
+       {!isLoading && !error && !dictionaryData && !wikipediaData && searchTerm && (
           <div className="text-center text-muted-foreground mt-8">
             No results found for "{searchTerm}". Try a different word.
           </div>

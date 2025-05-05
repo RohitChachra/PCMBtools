@@ -110,10 +110,12 @@ export function Header() {
             {navItems.map((item) => (
               <NavigationMenuItem key={item.trigger.label}>
                  {item.subItems && item.subItems.length > 0 ? (
+                  <Link href={item.href} legacyBehavior passHref>
                     <NavigationMenuTrigger className="flex items-center gap-1">
                         <item.trigger.icon className="h-4 w-4" />
                         {item.trigger.label}
                     </NavigationMenuTrigger>
+                   </Link>
                  ) : (
                      // Simple link if no sub-items
                     <Link href={item.href} legacyBehavior passHref>
