@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { BookOpenText, FlaskConical, Atom, Sigma, Shapes, Calculator, ArrowRightLeft, Microscope, BarChart3, SigmaIcon } from 'lucide-react'; // Added SigmaIcon
+import { BookOpenText, FlaskConical, Atom, Microscope, BarChart3, Sigma, Shapes, Calculator, ArrowRightLeft } from 'lucide-react'; // Added Calculator, ArrowRightLeft
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Menu } from 'lucide-react';
@@ -16,24 +16,24 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
-import { ScrollArea } from "@/components/ui/scroll-area"; // Import ScrollArea
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion"; // Import Accordion
+} from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 import * as React from 'react';
 
 const navItems = [
   {
-    trigger: { label: 'Mathematics', icon: SigmaIcon }, // Changed to SigmaIcon
+    trigger: { label: 'Mathematics', icon: Sigma },
     href: '/math',
     subItems: [
       { href: '/math/geometry', title: 'Geometry Calculator', description: 'Calculate properties of 2D/3D shapes.', icon: Shapes },
       { href: '/math/graphing', title: 'Graphing Calculator', description: 'Visualize functions interactively.', icon: Calculator },
-      { href: '/math/scientific-calculator', title: 'Scientific Calculator', description: 'Perform complex calculations.', icon: Calculator }, // Changed icon
+      { href: '/math/scientific-calculator', title: 'Scientific Calculator', description: 'Perform complex calculations.', icon: Calculator },
       { href: '/math/statistics', title: 'Statistics Calculator', description: 'Analyze discrete & continuous data.', icon: BarChart3 },
     ],
   },
@@ -49,7 +49,7 @@ const navItems = [
     trigger: { label: 'Physics', icon: Atom },
     href: '/physics',
     subItems: [
-        { href: '/physics', title: 'Physics Calculator Hub', description: 'Explore all physics calculators.', icon: Atom },
+        { href: '/physics/calculators', title: 'Physics Calculator Hub', description: 'Access calculators for various topics.', icon: Calculator },
         { href: '/physics/unit-converter', title: 'Unit Converter', description: 'Convert common physics units.', icon: ArrowRightLeft },
     ],
   },
@@ -106,15 +106,13 @@ export function Header() {
               <NavigationMenuItem key={item.trigger.label}>
                  {item.subItems && item.subItems.length > 0 ? (
                      <>
-                         <NavigationMenuTrigger>
-                              {/* Use a non-interactive span/div inside trigger if clicking should only open dropdown */}
-                              <div className="flex items-center gap-1">
-                                   <item.trigger.icon className="h-4 w-4" />
-                                   {item.trigger.label}
-                               </div>
+                         {/* Removed asChild, content is now inside the trigger */}
+                         <NavigationMenuTrigger className="flex items-center gap-1">
+                             <item.trigger.icon className="h-4 w-4" />
+                             {item.trigger.label}
                          </NavigationMenuTrigger>
                          <NavigationMenuContent>
-                             <ul className={cn("grid gap-3 p-4 md:w-[550px] lg:w-[650px]", `lg:grid-cols-${Math.min(item.subItems.length, 3)}`)}>
+                              <ul className={cn("grid gap-3 p-4 md:w-[550px] lg:w-[650px]", `lg:grid-cols-${Math.min(item.subItems.length, 3)}`)}>
                               {item.subItems.map((subItem) => (
                                 <ListItem
                                   key={subItem.href}
@@ -125,7 +123,7 @@ export function Header() {
                                   {subItem.description}
                                 </ListItem>
                               ))}
-                              {/* Optionally add a link to the main category page */}
+                              {/* Link to the main category page within the content */}
                               <ListItem href={item.href} title={`All ${item.trigger.label}`} icon={item.trigger.icon}>
                                 View all {item.trigger.label.toLowerCase()} tools.
                               </ListItem>
@@ -133,6 +131,7 @@ export function Header() {
                           </NavigationMenuContent>
                      </>
                  ) : (
+                     // Simple link if no sub-items
                     <Link href={item.href} legacyBehavior passHref>
                         <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "flex items-center gap-1")}>
                              <item.trigger.icon className="h-4 w-4" />
@@ -161,9 +160,12 @@ export function Header() {
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="p-0"> {/* Remove padding from SheetContent */}
-               <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-               <SheetDescription className="sr-only">Main navigation links for PCMBtools</SheetDescription>
-               <ScrollArea className="h-full py-6 px-6"> {/* Add ScrollArea and padding here */}
+              {/* Add visually hidden title and description for accessibility */}
+              <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+              <SheetDescription className="sr-only">
+                Mobile navigation menu for PCMBtools.
+              </SheetDescription>
+              <ScrollArea className="h-full py-6 px-6"> {/* Add ScrollArea and padding here */}
                  <Link href="/" className="flex items-center gap-2 mb-6"> {/* Increased bottom margin */}
                     <BookOpenText className="h-6 w-6 text-primary" />
                     <span className="text-lg font-bold">PCMBtools</span>
