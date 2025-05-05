@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -94,7 +95,7 @@ export default function GraphingPage() {
   // **Crucially**, DO NOT include `expressions` or `isDesmosInitialized` here,
   // as it can cause infinite loops or redundant re-initializations.
   // Initialization should only depend on script load and DOM element availability.
-  }, [isDesmosLoaded, calculatorRef]); // Only depend on script load status and element ref
+  }, [isDesmosLoaded, calculatorRef, toast, expressions]); // Added toast and expressions as dependencies
 
   // Effect to handle expressions update (sync with Desmos instance)
   useEffect(() => {
@@ -197,7 +198,7 @@ export default function GraphingPage() {
 
 
         {/* Graphing Calculator Section */}
-        <Card className="shadow-lg rounded-lg max-w-4xl mx-auto">
+        <Card className="shadow-lg rounded-lg mx-auto"> {/* Removed max-w-4xl */}
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-accent">
                 <CalculatorIcon className="h-6 w-6" />
@@ -294,3 +295,4 @@ export default function GraphingPage() {
     </>
   );
 }
+
