@@ -2,14 +2,16 @@
 'use client';
 
 import React, { useState } from 'react';
-import Image from 'next/image';
+// Remove Image import as Wikipedia card is removed
+// import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { BookMarked, Search, Volume2 } from 'lucide-react'; // Removed LinkIcon
+import { BookMarked, Search, Volume2 } from 'lucide-react';
+import { cn } from '@/lib/utils'; // Import cn for conditional styling
 
 // --- API Types ---
 
@@ -22,25 +24,17 @@ interface DictionaryApiResponse {
     definitions: {
       definition: string;
       example?: string;
-      synonyms?: string[]; // Keep these as they come from dictionaryapi
-      antonyms?: string[]; // Keep these as they come from dictionaryapi
+      synonyms?: string[];
+      antonyms?: string[];
     }[];
-    synonyms?: string[]; // Keep these as they come from dictionaryapi
-    antonyms?: string[]; // Keep these as they come from dictionaryapi
+    synonyms?: string[];
+    antonyms?: string[];
   }[];
   license: { name: string; url: string };
   sourceUrls: string[];
 }
 
-// Removed DatamuseRelatedWord interface
-
-interface WikipediaSummary {
-  title: string;
-  extract: string;
-  thumbnail?: { source: string; width: number; height: number };
-  originalimage?: { source: string; width: number; height: number };
-  content_urls?: { desktop?: { page: string } };
-}
+// Removed WikipediaSummary interface
 
 // --- API Fetching Functions ---
 
@@ -59,26 +53,7 @@ async function getDictionaryDefinition(word: string): Promise<DictionaryApiRespo
   }
 }
 
-// Removed getRelatedWords function
-
-async function getWikipediaSummary(word: string): Promise<WikipediaSummary | null> {
-    try {
-        const encodedTerm = encodeURIComponent(word.trim());
-        const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodedTerm}`;
-        const response = await fetch(url, {
-            headers: { 'User-Agent': 'PCMBtools/1.0 (contact@example.com)' } // Be polite with User-Agent
-        });
-        if (!response.ok) {
-            if (response.status === 404) return null; // Page not found is expected
-            throw new Error(`Wikipedia API Error: ${response.status}`);
-        }
-        const data = await response.json();
-        return data as WikipediaSummary;
-    } catch (error) {
-        console.error('Error fetching Wikipedia summary:', error);
-        return null;
-    }
-}
+// Removed getWikipediaSummary function
 
 // --- Component ---
 
@@ -88,10 +63,9 @@ export default function DictionaryPage() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // State for each remaining API result
+  // State for dictionary result only
   const [dictionaryData, setDictionaryData] = useState<DictionaryApiResponse[] | null>(null);
-  // Removed synonyms, antonyms, triggers state
-  const [wikipediaData, setWikipediaData] = useState<WikipediaSummary | null>(null);
+  // Removed wikipediaData state
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,45 +79,22 @@ export default function DictionaryPage() {
     setIsLoading(true);
     setError(null);
     setDictionaryData(null);
-    // Removed setting related words state to null
-    setWikipediaData(null);
+    // Removed setting wikipediaData state to null
 
     try {
-      // Removed related words calls from Promise.allSettled
-      const [dictRes, wikiRes] = await Promise.allSettled([
-        getDictionaryDefinition(trimmedSearch),
-        getWikipediaSummary(trimmedSearch),
-      ]);
+      // Fetch only dictionary definition
+      const dictRes = await getDictionaryDefinition(trimmedSearch);
 
-      let foundSomething = false;
-
-      if (dictRes.status === 'fulfilled' && dictRes.value) {
-        setDictionaryData(dictRes.value);
-        foundSomething = true;
-      }
-      // Removed handling for related words results
-      if (wikiRes.status === 'fulfilled' && wikiRes.value) {
-        setWikipediaData(wikiRes.value);
-        foundSomething = true;
-      }
-
-      if (!foundSomething && dictRes.status !== 'fulfilled') {
-         // If primary dictionary API failed, show its error
-         setError(`Failed to fetch definition: ${dictRes.reason?.message || 'Unknown API error'}`);
-         toast({ title: "Definition Error", description: "Could not fetch definition.", variant: "destructive" });
-      } else if (!foundSomething) {
-         // If dictionary API returned 404 and Wikipedia also 404'd
-         setError(`No definition or summary found for "${trimmedSearch}".`);
-         toast({ title: "Not Found", description: `No results for "${trimmedSearch}".`, variant: "destructive" });
+      if (dictRes) {
+        setDictionaryData(dictRes);
+        toast({ title: "Search Complete", description: `Found definition for "${trimmedSearch}".` });
       } else {
-         toast({ title: "Search Complete", description: `Found results for "${trimmedSearch}".` });
+        setError(`No definition found for "${trimmedSearch}".`);
+        toast({ title: "Not Found", description: `No definition found for "${trimmedSearch}".`, variant: "destructive" });
       }
 
-      // Removed logging for related words errors
-      if (wikiRes.status === 'rejected') console.error("Wikipedia fetch error:", wikiRes.reason);
-
-    } catch (err) { // Catch unexpected errors during Promise.allSettled itself
-      console.error('Overall search failed:', err);
+    } catch (err) { // Catch unexpected errors during fetch
+      console.error('Dictionary search failed:', err);
       const errorMessage = err instanceof Error ? err.message : "An unknown error occurred during search.";
       setError(`An error occurred: ${errorMessage}`);
       toast({ title: "Search Error", description: "An unexpected error occurred.", variant: "destructive" });
@@ -157,9 +108,9 @@ export default function DictionaryPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold">Dictionary & Word Explorer</h1>
+      <h1 className="text-3xl font-bold">Dictionary</h1>
       <p className="text-muted-foreground">
-        Enter a word to find its definition and a summary.
+        Enter a word to find its definition.
       </p>
 
       <Card>
@@ -173,7 +124,7 @@ export default function DictionaryPage() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="e.g., Photosynthesis, Serendipity, Algorithm"
+              placeholder="e.g., Serendipity, Algorithm"
               className="flex-grow"
               aria-label="Search for a word"
               disabled={isLoading}
@@ -186,10 +137,8 @@ export default function DictionaryPage() {
       </Card>
 
        {isLoading && (
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Skeleton className="h-64 w-full" />
-            <Skeleton className="h-64 w-full" />
-            {/* Remove skeleton for related words */}
+         <div className="grid grid-cols-1 md:grid-cols-1 gap-6"> {/* Adjusted for single card */}
+            <Skeleton className="h-80 w-full" /> {/* Increased height */}
          </div>
        )}
 
@@ -202,27 +151,33 @@ export default function DictionaryPage() {
        )}
 
        {/* Results Area */}
-       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+       <div className="grid grid-cols-1 md:grid-cols-1 gap-6"> {/* Adjusted for single card */}
 
-         {/* Dictionary Definition Card */}
+         {/* Dictionary Definition Card - Enhanced Styling */}
          {!isLoading && dictionaryData && (
-            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
-               <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+            <Card className={cn(
+              "shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden",
+              "bg-gradient-to-br from-card via-card to-primary/10 dark:from-card dark:via-card dark:to-primary/20", // Subtle gradient
+              "border-primary/50 dark:border-primary/40", // Vibrant border
+              "ring-2 ring-primary/30 ring-offset-2 ring-offset-background dark:ring-primary/40 dark:ring-offset-card", // Glow effect
+              "hover:ring-primary/50 dark:hover:ring-primary/60" // Enhanced glow on hover
+            )}>
+               <CardHeader className="border-b border-primary/20 dark:border-primary/30 bg-primary/5 dark:bg-primary/10">
+                  <CardTitle className="flex items-center gap-2 text-primary dark:text-primary-foreground">
                      {dictionaryData[0].word}
-                     {dictionaryData[0].phonetic && <span className="text-muted-foreground text-lg">({dictionaryData[0].phonetic})</span>}
+                     {dictionaryData[0].phonetic && <span className="text-muted-foreground text-lg dark:text-primary-foreground/80">({dictionaryData[0].phonetic})</span>}
                       {audioSource && (
-                        <Button variant="ghost" size="icon" onClick={() => new Audio(audioSource).play()} aria-label="Play pronunciation">
+                        <Button variant="ghost" size="icon" onClick={() => new Audio(audioSource).play()} aria-label="Play pronunciation" className="text-primary dark:text-primary-foreground hover:bg-primary/10 dark:hover:bg-primary/20">
                             <Volume2 className="h-5 w-5" />
                          </Button>
                       )}
                   </CardTitle>
-                  <CardDescription>Definition</CardDescription>
+                  {/* Removed CardDescription "Definition" */}
                </CardHeader>
-               <CardContent className="space-y-4 max-h-[60vh] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-muted scrollbar-track-background">
+               <CardContent className="space-y-4 pt-6 max-h-[60vh] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-muted scrollbar-track-background">
                   {dictionaryData[0].meanings.map((meaning, index) => (
-                    <div key={index} className="space-y-2 border-l-2 border-primary pl-3 py-1">
-                      <h3 className="font-semibold text-primary">{meaning.partOfSpeech}</h3>
+                    <div key={index} className="space-y-2 border-l-4 border-accent pl-4 py-2 bg-background/50 dark:bg-background/70 rounded-r-md">
+                      <h3 className="font-semibold text-accent-foreground dark:text-accent">{meaning.partOfSpeech}</h3>
                       <ul className="list-decimal pl-5 space-y-1">
                         {meaning.definitions.map((def, defIndex) => (
                           <li key={defIndex}>
@@ -247,66 +202,19 @@ export default function DictionaryPage() {
                     </div>
                   ))}
                </CardContent>
-               {/* Removed CardFooter with source link */}
+               {/* CardFooter is removed */}
             </Card>
          )}
 
-          {/* Removed Related Words Card */}
-
-           {/* Wikipedia Summary Card */}
-          {!isLoading && wikipediaData && (
-            <Card className="shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
-                <CardHeader>
-                   <CardTitle>Summary for "{wikipediaData.title}"</CardTitle>
-                   <CardDescription>From Wikipedia</CardDescription>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="sm:col-span-1 relative min-h-[150px] bg-muted rounded-md flex items-center justify-center overflow-hidden border">
-                       {wikipediaData.originalimage?.source ? (
-                          <Image
-                            src={wikipediaData.originalimage.source}
-                            alt={`Image for ${wikipediaData.title}`}
-                            width={wikipediaData.originalimage.width || 300}
-                            height={wikipediaData.originalimage.height || 200}
-                            style={{ objectFit: 'contain', maxHeight: '250px' }} // Limit height
-                             data-ai-hint="encyclopedia image illustration"
-                            onError={(e) => {
-                                e.currentTarget.src = 'https://via.placeholder.com/300x200?text=Image+Not+Found';
-                                e.currentTarget.alt = `Image not found for ${wikipediaData.title}`;
-                            }}
-                          />
-                       ) : wikipediaData.thumbnail?.source ? (
-                           <Image
-                            src={wikipediaData.thumbnail.source}
-                            alt={`Thumbnail for ${wikipediaData.title}`}
-                            width={wikipediaData.thumbnail.width}
-                            height={wikipediaData.thumbnail.height}
-                            style={{ objectFit: 'contain', maxHeight: '250px' }}
-                             data-ai-hint="encyclopedia image illustration"
-                            onError={(e) => {
-                                e.currentTarget.src = 'https://via.placeholder.com/150x150?text=Image+Not+Found';
-                                e.currentTarget.alt = `Thumbnail not found for ${wikipediaData.title}`;
-                            }}
-                          />
-                       ) : (
-                           <div className="text-muted-foreground text-center p-4">No image available</div>
-                       )}
-                    </div>
-                    <div className="sm:col-span-2 space-y-2">
-                       <p className="text-base leading-relaxed">{wikipediaData.extract}</p>
-                    </div>
-                </CardContent>
-                 {/* Removed CardFooter with Wikipedia link */}
-            </Card>
-         )}
+          {/* Removed Wikipedia Summary Card */}
 
        </div> {/* End Results Grid */}
 
        {/* Placeholder when no search has been performed */}
-       {/* Adjusted check to exclude related words */}
-       {!isLoading && !error && !dictionaryData && !wikipediaData && searchTerm && (
+       {/* Adjusted check to exclude related words and wikipedia */}
+       {!isLoading && !error && !dictionaryData && searchTerm && (
           <div className="text-center text-muted-foreground mt-8">
-            No results found for "{searchTerm}". Try a different word.
+            No definition found for "{searchTerm}". Try a different word.
           </div>
        )}
        {!isLoading && !searchTerm && (
@@ -318,3 +226,4 @@ export default function DictionaryPage() {
     </div>
   );
 }
+
