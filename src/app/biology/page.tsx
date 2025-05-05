@@ -142,9 +142,9 @@ export default function BiologyPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold">Biology Flashcard Explorer</h1>
+      <h1 className="text-3xl font-bold">Biology Term Explorer</h1>
       <p className="text-muted-foreground">
-        Enter a biology term to get a quick summary flashcard from Wikipedia.
+        Enter a biology term to get a quick summary flashcard.
       </p>
 
       <Card>
