@@ -465,34 +465,37 @@ export default function StatisticsPage() {
                <TableCaption>Add or remove rows as needed. Ensure intervals don't overlap or have gaps.</TableCaption>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Lower Bound</TableHead>
-                  <TableHead>Upper Bound</TableHead>
-                  <TableHead>Frequency</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+                  {/* Adjust header padding and text alignment */}
+                  <TableHead className="px-2 py-2 sm:px-4 sm:py-3 text-left">Lower Bound</TableHead>
+                  <TableHead className="px-2 py-2 sm:px-4 sm:py-3 text-left">Upper Bound</TableHead>
+                  <TableHead className="px-2 py-2 sm:px-4 sm:py-3 text-left">Frequency</TableHead>
+                  <TableHead className="text-right px-2 py-2 sm:px-4 sm:py-3">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {continuousData.map((row, index) => (
                   <TableRow key={row.id}>
-                    <TableCell>
+                    <TableCell className="px-1 py-1 sm:px-4 sm:py-2"> {/* Reduced horizontal padding on mobile */}
                       <Input
                         type="number"
                         step="any"
                         value={row.lower}
                         onChange={(e) => handleContinuousDataChange(row.id, 'lower', e.target.value)}
                         placeholder="e.g., 0"
+                        className="w-20 sm:w-full" // Increased width on small screens
                       />
                     </TableCell>
-                    <TableCell>
+                     <TableCell className="px-1 py-1 sm:px-4 sm:py-2"> {/* Reduced horizontal padding on mobile */}
                       <Input
                         type="number"
                         step="any"
                         value={row.upper}
                         onChange={(e) => handleContinuousDataChange(row.id, 'upper', e.target.value)}
                         placeholder="e.g., 10"
+                         className="w-20 sm:w-full" // Increased width on small screens
                       />
                     </TableCell>
-                    <TableCell>
+                     <TableCell className="px-1 py-1 sm:px-4 sm:py-2"> {/* Reduced horizontal padding on mobile */}
                       <Input
                         type="number"
                         min="0" // Frequency cannot be negative
@@ -500,14 +503,16 @@ export default function StatisticsPage() {
                         value={row.frequency}
                         onChange={(e) => handleContinuousDataChange(row.id, 'frequency', e.target.value)}
                         placeholder="e.g., 5"
+                         className="w-16 sm:w-full" // Maintain smaller width for frequency if needed
                       />
                     </TableCell>
-                     <TableCell className="text-right">
+                     <TableCell className="text-right px-1 py-1 sm:px-4 sm:py-2"> {/* Reduced horizontal padding on mobile */}
                        <Button
                          variant="ghost"
                          size="icon"
                          onClick={() => removeContinuousRow(row.id)}
                          disabled={continuousData.length <= 1} // Don't allow removing the last row
+                         className="h-8 w-8 sm:h-auto sm:w-auto" // Smaller button on mobile
                        >
                          <Trash2 className="h-4 w-4 text-destructive" />
                          <span className="sr-only">Remove Row</span>
@@ -517,14 +522,14 @@ export default function StatisticsPage() {
                 ))}
               </TableBody>
                <UiTableFooter>
-                    <TableRow>
-                        <TableCell colSpan={3}>
-                            <Button variant="outline" size="sm" onClick={addContinuousRow} className="mt-2">
-                              <Plus className="h-4 w-4 mr-1" /> Add Row
-                            </Button>
-                        </TableCell>
-                        <TableCell className="text-right" /> {/* Empty cell for alignment */}
-                    </TableRow>
+                  <TableRow>
+                     <TableCell colSpan={3} className="py-2 sm:py-4"> {/* Adjusted padding */}
+                         <Button variant="outline" size="sm" onClick={addContinuousRow} className="mt-2">
+                           <Plus className="h-4 w-4 mr-1" /> Add Row
+                         </Button>
+                     </TableCell>
+                     <TableCell className="text-right" /> {/* Empty cell for alignment */}
+                 </TableRow>
                 </UiTableFooter>
             </Table>
             <Button onClick={calculateContinuousStats} className="mt-4">Calculate Continuous Stats</Button>
@@ -625,6 +630,7 @@ export default function StatisticsPage() {
                             </LineChart>
                          </ChartContainer>
                      </div>
+                     {/* Removed Histogram for Discrete Data */}
                 </div>
              )}
           </CardContent>
